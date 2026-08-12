@@ -514,7 +514,7 @@ const PASSWORD = "nexo2026control"; // cambiar acá si querés otra clave
 const SH = () => ({ apikey: SUPA_ANON, Authorization: "Bearer " + SUPA_ANON });
 
 // Claves reales usadas por la app VVCONSTRUCCIONESULTIMO dentro de bco_storage
-const KEYS = ["vv_obras", "vv_personal", "vv_matpedidos", "vv_pedidos", "vv_mensajes", "vv_avance", "vv_certif_sem"];
+const KEYS = ["vv_obras", "vv_personal", "vv_matpedidos", "vv_pedidos", "vv_mensajes", "vv_avance", "vv_certif_sem", "vv_bitacora", "vv_auditoria"];
 
 function contarValor(raw) {
   if (!raw) return 0;
@@ -585,7 +585,7 @@ function Gate({ onUnlock }) {
 // ════════════════════════════════════════════════════════════
 function Dashboard() {
   const [cargando, setCargando] = useState(true);
-  const [actividad, setActividad] = useState({ obras: 0, personal: 0, matpedidos: 0, pedidos: 0, mensajes: 0, avance: 0, certificados: 0 });
+  const [actividad, setActividad] = useState({ obras: 0, personal: 0, matpedidos: 0, pedidos: 0, mensajes: 0, avance: 0, certificados: 0, bitacora: 0, auditoria: 0 });
   const [aperturas, setAperturas] = useState({ total: 0, hoy: 0, porVista: { contratista: 0, cliente: 0, constructora: 0, propietario: 0 } });
   const [supaOk, setSupaOk] = useState(null); // null = chequeando, true/false
   const [appOk, setAppOk] = useState(null);
@@ -631,6 +631,8 @@ function Dashboard() {
         mensajes: contarValor(mapa["vv_mensajes"]),
         avance: contarRegistrosAgrupados(mapa["vv_avance"]),
         certificados: contarRegistrosAgrupados(mapa["vv_certif_sem"]),
+        bitacora: contarValor(mapa["vv_bitacora"]),
+        auditoria: contarValor(mapa["vv_auditoria"]),
       });
     } catch (e) {
       // si falla, dejamos los números en 0 — el estado de Supabase ya lo refleja arriba
@@ -790,6 +792,8 @@ function Dashboard() {
         { label: "Mensajes / fotos", val: actividad.mensajes },
         { label: "Registros de avance", val: actividad.avance },
         { label: "Certificados semanales", val: actividad.certificados },
+        { label: "Bitácoras cargadas", val: actividad.bitacora },
+        { label: "Auditorías", val: actividad.auditoria },
       ].map((g, i) =>
         h("div", { className: "gauge", key: i },
           h("div", { className: "gauge-label" }, g.label),
