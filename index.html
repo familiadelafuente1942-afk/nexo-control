@@ -570,6 +570,7 @@ function Gate({ onUnlock }) {
 function Dashboard() {
   const [cargando, setCargando] = useState(true);
   const [actividad, setActividad] = useState({ obras: 0, personal: 0, matpedidos: 0, pedidos: 0, mensajes: 0, avance: 0 });
+  const [aperturas, setAperturas] = useState({ total: 0, hoy: 0, porVista: { contratista: 0, cliente: 0, constructora: 0, propietario: 0 } });
   const [supaOk, setSupaOk] = useState(null); // null = chequeando, true/false
   const [appOk, setAppOk] = useState(null);
   const [ultimaActualizacion, setUltimaActualizacion] = useState(null);
@@ -616,6 +617,32 @@ function Dashboard() {
       });
     } catch (e) {
       // si falla, dejamos los números en 0 — el estado de Supabase ya lo refleja arriba
+    }
+
+    // 4) Traer registros de apertura de app (key con prefijo "apertura:")
+    try {
+      const r = await fetch(
+        SUPA_URL + "/rest/v1/bco_storage?key=like." + encodeURIComponent("apertura:") + "*&select=key&limit=5000",
+        { headers: SH() }
+      );
+      const filas = await r.json();
+      const hoyStr = new Date().toISOString().slice(0, 10);
+      let total = 0, hoy = 0;
+      const porVista = { contratista: 0, cliente: 0, constructora: 0, propietario: 0 };
+
+      (filas || []).forEach(f => {
+        const partes = (f.key || "").split(":");
+        // formato: apertura:<vista>:<timestampMs>:<random>
+        const vista = partes[1];
+        const ts = Number(partes[2]);
+        total++;
+        if (vista && porVista.hasOwnProperty(vista)) porVista[vista]++;
+        if (ts && new Date(ts).toISOString().slice(0, 10) === hoyStr) hoy++;
+      });
+
+      setAperturas({ total, hoy, porVista });
+    } catch (e) {
+      // sin datos de apertura todavía — queda en 0
     }
 
     setUltimaActualizacion(new Date());
@@ -745,6 +772,24 @@ function Dashboard() {
         { label: "Pedidos generales", val: actividad.pedidos },
         { label: "Mensajes / fotos", val: actividad.mensajes },
         { label: "Registros de avance", val: actividad.avance },
+      ].map((g, i) =>
+        h("div", { className: "gauge", key: i },
+          h("div", { className: "gauge-label" }, g.label),
+          h("div", { className: "gauge-num" + (g.val === 0 ? " zero" : "") }, g.val)
+        )
+      )
+    ),
+
+    // Uso de la app
+    h("div", { className: "section-label" }, "Uso de la app"),
+    h("div", { className: "gauge-grid" },
+      [
+        { label: "Aperturas totales", val: aperturas.total },
+        { label: "Aperturas hoy", val: aperturas.hoy },
+        { label: "Vista Contratista", val: aperturas.porVista.contratista },
+        { label: "Vista Cliente", val: aperturas.porVista.cliente },
+        { label: "Vista Constructora", val: aperturas.porVista.constructora },
+        { label: "Vista Propietario", val: aperturas.porVista.propietario },
       ].map((g, i) =>
         h("div", { className: "gauge", key: i },
           h("div", { className: "gauge-label" }, g.label),
