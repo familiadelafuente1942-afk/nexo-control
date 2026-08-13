@@ -603,6 +603,7 @@ function Dashboard() {
   const [cargando, setCargando] = useState(true);
   const [actividad, setActividad] = useState({ obras: 0, personal: 0, matpedidos: 0, pedidos: 0, mensajes: 0, avance: 0, certificados: 0, bitacora: 0, auditoria: 0 });
   const [aperturas, setAperturas] = useState({ total: 0, hoy: 0, porVista: { contratista: 0, cliente: 0, constructora: 0, propietario: 0 } });
+  const [estadoApps, setEstadoApps] = useState({ contratista: { errores: 0 }, cliente: { errores: 0 }, constructora: { errores: 0 }, propietario: { errores: 0 } });
   const [supaOk, setSupaOk] = useState(null); // null = chequeando, true/false
   const [appOk, setAppOk] = useState(null);
   const [salud, setSalud] = useState({ vercel: null, claude: null, resend: null });
@@ -682,6 +683,26 @@ function Dashboard() {
       setAperturas({ total, hoy, porVista });
     } catch (e) {
       // sin datos de apertura todavía — queda en 0
+    }
+
+    // 5) Traer errores reales reportados por las 4 apps (últimas 24hs)
+    try {
+      const desde = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const r = await fetch(
+        SUPA_URL + "/rest/v1/app_errores?creado_en=gte." + encodeURIComponent(desde) + "&select=app,mensaje,creado_en&order=creado_en.desc&limit=500",
+        { headers: SH() }
+      );
+      const filas = await r.json();
+      const estado = { contratista: { errores: 0 }, cliente: { errores: 0 }, constructora: { errores: 0 }, propietario: { errores: 0 } };
+      (filas || []).forEach(f => {
+        if (f.app && estado.hasOwnProperty(f.app)) {
+          estado[f.app].errores++;
+          if (!estado[f.app].ultimo) estado[f.app].ultimo = f.mensaje; // el primero es el más reciente (order desc)
+        }
+      });
+      setEstadoApps(estado);
+    } catch (e) {
+      // sin datos de errores todavía — se asume OK
     }
 
     setUltimaActualizacion(new Date());
@@ -799,6 +820,27 @@ function Dashboard() {
           h("div", { className: "chip-expand" }, s.detalleExtra)
         )
       )
+    ),
+
+    // Estado de las apps — vigía en vivo, avisa sin que nadie tenga que llamar
+    h("div", { className: "section-label" }, "Estado de las apps"),
+    h("div", { className: "gauge-grid" },
+      [
+        { label: "App Contratista", tag: "contratista" },
+        { label: "App Cliente", tag: "cliente" },
+        { label: "App Constructora", tag: "constructora" },
+        { label: "App Propietario", tag: "propietario" },
+      ].map((a, i) => {
+        const e = estadoApps[a.tag] || { errores: 0 };
+        const ok = e.errores === 0;
+        return h("div", { className: "gauge", key: i, style: { border: "1px solid " + (ok ? "rgba(52,199,89,.4)" : "rgba(255,69,58,.5)") } },
+          h("div", { className: "gauge-label" }, a.label),
+          h("div", { style: { fontSize: 15, fontWeight: 700, color: ok ? "#34C759" : "#FF453A", marginTop: 4 } },
+            ok ? "✓ OK" : ("⚠ " + e.errores + (e.errores === 1 ? " error" : " errores"))
+          ),
+          !ok && e.ultimo && h("div", { style: { fontSize: 10.5, color: "#9AA5B1", marginTop: 4, lineHeight: 1.4 } }, e.ultimo.slice(0, 90))
+        );
+      })
     ),
 
     // Actividad
