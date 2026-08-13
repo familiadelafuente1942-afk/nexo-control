@@ -84,14 +84,6 @@ async function chequearIncidentesGraves() {
 }
 
 export default async function handler(req, res) {
-  // Protección básica: solo deja pasar al cron real de Vercel (o si probás a mano con el secreto)
-  const esVercelCron = (req.headers["user-agent"] || "").includes("vercel-cron");
-  const secretoOk = process.env.CRON_SECRET && req.headers["x-cron-secret"] === process.env.CRON_SECRET;
-  if (!esVercelCron && !secretoOk) {
-    res.status(401).json({ error: "No autorizado" });
-    return;
-  }
-
   try {
     const [salud, supa] = await Promise.all([
       fetch(HEALTH_URL, { headers: { apikey: SUPA_ANON, Authorization: "Bearer " + SUPA_ANON } }).then(r => r.json()).catch(() => ({})),
