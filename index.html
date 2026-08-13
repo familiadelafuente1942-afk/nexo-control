@@ -604,6 +604,7 @@ function Dashboard() {
   const [actividad, setActividad] = useState({ obras: 0, personal: 0, matpedidos: 0, pedidos: 0, mensajes: 0, avance: 0, certificados: 0, bitacora: 0, auditoria: 0 });
   const [aperturas, setAperturas] = useState({ total: 0, hoy: 0, porVista: { contratista: 0, cliente: 0, constructora: 0, propietario: 0 } });
   const [estadoApps, setEstadoApps] = useState({ contratista: { errores: 0 }, cliente: { errores: 0 }, constructora: { errores: 0 }, propietario: { errores: 0 } });
+  const [costoClaude, setCostoClaude] = useState({ mes: null, hoy: null, porApp: [] }); // null = todavía no cargó
   const [supaOk, setSupaOk] = useState(null); // null = chequeando, true/false
   const [appOk, setAppOk] = useState(null);
   const [salud, setSalud] = useState({ vercel: null, claude: null, resend: null });
@@ -705,19 +706,44 @@ function Dashboard() {
       // sin datos de errores todavía — se asume OK
     }
 
+    // 6) Costo real de Claude API — leído directo de ai_usage (tokens × precio real de cada llamada)
+    try {
+      const ahora = new Date();
+      const inicioMes = new Date(Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth(), 1)).toISOString();
+      const inicioHoy = new Date(Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth(), ahora.getUTCDate())).toISOString();
+      const r = await fetch(
+        SUPA_URL + "/rest/v1/ai_usage?creado_en=gte." + encodeURIComponent(inicioMes) + "&select=app,costo_usd,creado_en&limit=10000",
+        { headers: SH() }
+      );
+      const filas = await r.json();
+      let mes = 0, hoy = 0;
+      const porAppMapa = {};
+      (filas || []).forEach(f => {
+        const c = Number(f.costo_usd) || 0;
+        mes += c;
+        if (f.creado_en >= inicioHoy) hoy += c;
+        const app = f.app || "sin identificar";
+        porAppMapa[app] = (porAppMapa[app] || 0) + c;
+      });
+      const porApp = Object.entries(porAppMapa).sort((a, b) => b[1] - a[1]).map(([app, monto]) => ({ app, monto }));
+      setCostoClaude({ mes, hoy, porApp });
+    } catch (e) {
+      // sin datos todavía — el card de costos cae al valor manual como respaldo
+    }
+
     setUltimaActualizacion(new Date());
     setCargando(false);
   }, []);
 
   useEffect(() => { cargarTodo(); }, [cargarTodo]);
 
-  // Costos fijos conocidos — actualizar a mano hasta que se conecten las APIs reales
+  // Costos: Supabase/Vercel son de plan fijo (se cargan a mano), Claude ahora es real (ai_usage)
   const costos = [
-    { nombre: "Supabase", tag: "Plan Pro · base de datos y storage", monto: 25 },
-    { nombre: "Vercel", tag: "Plan Pro · hosting y deploys", monto: 20 },
-    { nombre: "Claude API", tag: "IA dentro de las apps · uso del mes en curso", monto: 104 },
-    { nombre: "Resend", tag: "Envío de mails · plan gratuito", monto: 0 },
-    { nombre: "GitHub", tag: "Repositorios · plan gratuito", monto: 0 },
+    { nombre: "Supabase", tag: "Plan Pro · base de datos y storage", monto: 25, fuente: "manual" },
+    { nombre: "Vercel", tag: "Plan Pro · hosting y deploys", monto: 20, fuente: "manual" },
+    { nombre: "Claude API", tag: costoClaude.mes === null ? "IA dentro de las apps · cargando…" : "IA dentro de las apps · costo real del mes en curso", monto: costoClaude.mes === null ? 104 : Number(costoClaude.mes.toFixed(2)), fuente: costoClaude.mes === null ? "manual" : "real" },
+    { nombre: "Resend", tag: "Envío de mails · plan gratuito", monto: 0, fuente: "gratis" },
+    { nombre: "GitHub", tag: "Repositorios · plan gratuito", monto: 0, fuente: "gratis" },
   ];
   const totalCostos = costos.reduce((a, c) => a + c.monto, 0);
 
@@ -888,7 +914,11 @@ function Dashboard() {
       costos.map((c, i) =>
         h("div", { className: "cost-row", key: i },
           h("div", null,
-            h("div", { className: "cost-name" }, c.nombre),
+            h("div", { className: "cost-name" },
+              c.nombre,
+              " ",
+              h("span", { style: { fontSize: 9.5, fontWeight: 700, letterSpacing: .3, padding: "2px 6px", borderRadius: 5, marginLeft: 4, color: c.fuente === "real" ? "#34C759" : c.fuente === "manual" ? "#B0894F" : "#7A8699", background: c.fuente === "real" ? "rgba(52,199,89,.12)" : c.fuente === "manual" ? "rgba(176,137,79,.15)" : "rgba(122,134,153,.12)" } }, c.fuente === "real" ? "REAL" : c.fuente === "manual" ? "MANUAL" : "GRATIS")
+            ),
             h("div", { className: "cost-tag" }, c.tag)
           ),
           h("div", { className: "cost-amount" }, "$" + c.monto)
@@ -896,16 +926,29 @@ function Dashboard() {
       ),
       h("div", { className: "cost-total" },
         h("div", { className: "cost-total-label" }, "Total mensual"),
-        h("div", { className: "cost-total-amount" }, "$" + totalCostos + " USD")
+        h("div", { className: "cost-total-amount" }, "$" + totalCostos.toFixed(2) + " USD")
+      ),
+      costoClaude.mes !== null && costoClaude.porApp.length > 0 && h("div", { style: { padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,.06)" } },
+        h("div", { style: { fontSize: 10.5, fontWeight: 700, color: "#7A8699", letterSpacing: .3, marginBottom: 8 } }, "CLAUDE API — DESGLOSE POR APP (MES EN CURSO)"),
+        costoClaude.porApp.map((p, i) =>
+          h("div", { key: i, style: { display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "#C7D0DB", padding: "3px 0" } },
+            h("span", null, p.app),
+            h("span", null, "$" + p.monto.toFixed(2))
+          )
+        ),
+        costoClaude.hoy !== null && h("div", { style: { fontSize: 11, color: "#7A8699", marginTop: 8 } }, "Hoy: $" + costoClaude.hoy.toFixed(2))
       ),
       h("div", { className: "cost-note" },
-        "El costo de Claude API es el consumo del mes en curso, cargado a mano — todavía no está conectado en vivo. Cuando entren clientes reales, este número va a mostrar el costo real por obra activa."
+        costoClaude.mes === null
+          ? "El costo de Claude API es el consumo del mes en curso, cargado a mano — todavía no está conectado en vivo."
+          : "Supabase y Vercel son de plan fijo (se actualizan a mano si cambia el plan). Claude API ahora es costo real, calculado por tokens de cada llamada."
       )
     ),
 
     // Incidentes
     h("div", { className: "section-label" }, "Historial de incidentes"),
     h("div", { className: "incidents-empty" }, "Sin incidentes registrados todavía."),
+
 
     h("div", { className: "footer" }, "NEXO Control · uso interno")
   );
