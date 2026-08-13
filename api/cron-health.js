@@ -1,3 +1,8 @@
+// Corre solo cada 10 minutos (ver vercel.json) — no depende de que nadie
+// tenga NEXO Control abierto. Chequea Vercel/Claude/Resend (vía hyper-worker,
+// que ya tiene las claves privadas del lado del servidor) y Supabase directo,
+// y guarda un registro en system_health para poder calcular uptime real.
+
 const SUPA_URL = "https://bxhjgxzvayszfqwlwinq.supabase.co";
 const SUPA_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4aGpneHp2YXlzemZxd2x3aW5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTI4NTMsImV4cCI6MjA5ODQyODg1M30.Wq7TbIUc0t3u7vbmi_yU49BlOaWzl9sByySBpV1HcZQ";
 const HEALTH_URL = SUPA_URL + "/functions/v1/hyper-worker";
@@ -74,6 +79,15 @@ async function chequearIncidentesGraves() {
 }
 
 export default async function handler(req, res) {
+  // Protección: deja pasar al cron real de Vercel, o a vos si probás a mano
+  // agregando ?secreto=nexo2026cron al final de la URL.
+  const esVercelCron = (req.headers["user-agent"] || "").includes("vercel-cron");
+  const secretoOk = (req.query && req.query.secreto) === "nexo2026cron";
+  if (!esVercelCron && !secretoOk) {
+    res.status(401).json({ error: "No autorizado" });
+    return;
+  }
+
   try {
     const [salud, supa] = await Promise.all([
       fetch(HEALTH_URL, { headers: { apikey: SUPA_ANON, Authorization: "Bearer " + SUPA_ANON } }).then(r => r.json()).catch(() => ({})),
@@ -113,4 +127,3 @@ export default async function handler(req, res) {
     res.status(500).json({ ok: false, error: e.message });
   }
 }
-
