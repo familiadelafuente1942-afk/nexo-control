@@ -70,7 +70,6 @@ function b64ToU8(b64) {
 }
 // Estado: "activo" | "bloqueado" | "no-soportado" | "inactivo"
 async function pushEstado() {
-  useEffect(() => { registrarApertura("constructora"); }, []);
   try {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return "no-soportado";
     if (Notification.permission === "denied") return "bloqueado";
@@ -153,6 +152,38 @@ function SyncBanner() {
   </div>);
 }
 
+// Registra que la app se abrió — usado por NEXO Control para saber
+// cuántas personas usan cada vista. No interfiere con nada existente.
+function registrarApertura(appTag) {
+  try {
+    const key = "apertura:" + appTag + ":" + Date.now() + ":" + Math.random().toString(36).slice(2, 8);
+    const valor = JSON.stringify({ app: appTag, ts: new Date().toISOString() });
+    storage.set(key, valor).catch(() => {});
+  } catch (e) {}
+}
+
+// Vigía de errores — avisa a NEXO Control si algo se rompe en el navegador
+// de cualquier persona que use esta vista, sin que nadie tenga que reportarlo.
+function reportarError(mensaje, detalle) {
+  try {
+    fetch(SUPA_URL + "/rest/v1/app_errores", {
+      method: "POST",
+      headers: { ...SH(), "Prefer": "return=minimal" },
+      body: JSON.stringify({
+        app: "constructora",
+        mensaje: String(mensaje || "").slice(0, 500),
+        detalle: String(detalle || "").slice(0, 2000),
+        url: (typeof location !== "undefined" ? location.href : ""),
+        dispositivo: (typeof navigator !== "undefined" ? navigator.userAgent : ""),
+      }),
+    }).catch(() => {});
+  } catch (e) {}
+}
+if (typeof window !== "undefined") {
+  window.addEventListener("error", (ev) => { reportarError(ev.message, ev.error && ev.error.stack); });
+  window.addEventListener("unhandledrejection", (ev) => { reportarError("Promise rechazada: " + ((ev.reason && ev.reason.message) || ev.reason), ev.reason && ev.reason.stack); });
+}
+
 const storage = {
     // Escribe SIEMPRE en localStorage primero (síncrono, instantáneo)
     // Luego intenta Supabase en background sin bloquear
@@ -172,18 +203,7 @@ const storage = {
         try {
             let r = await intentar();
             if (!r.ok) r = await intentar(); // un reintento antes de darlo por perdido
-            if (!r.ok) { avisarErrorSync(key); return { value, ok: false };
-
-// Registra que la app se abrió — usado por NEXO Control para saber
-// cuántas personas usan cada vista. No interfiere con nada existente.
-function registrarApertura(appTag) {
-  try {
-    const key = "apertura:" + appTag + ":" + Date.now() + ":" + Math.random().toString(36).slice(2, 8);
-    const valor = JSON.stringify({ app: appTag, ts: new Date().toISOString() });
-    storage.set(key, valor).catch(() => {});
-  } catch (e) {}
-}
- }
+            if (!r.ok) { avisarErrorSync(key); return { value, ok: false }; }
         } catch {
             avisarErrorSync(key);
             return { value, ok: false };
@@ -8182,6 +8202,7 @@ function WebFooter({ cfg }) {
 }
 
 function App() {
+  useEffect(() => { registrarApertura("constructora"); }, []);
   useEffect(() => { if (FORCE_CLOUD) { try { history.replaceState(null, "", window.location.pathname); } catch { } } }, []);
   const [cfg, setCfg] = useStoredState("vv_cfg", { ...DEFAULT_CONFIG, themeId:"institucional", fontId:"inter", radiusId:"sharp", colors:{...INST_COLORS}, apiKey:"" });
   // Rediseño oscuro/dorado: se aplica UNA sola vez (no fuerza nada si ya lo

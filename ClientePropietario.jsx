@@ -12,12 +12,6 @@ import React, { useState, useEffect, useRef } from "react";
 const SUPA_URL = "https://bxhjgxzvayszfqwlwinq.supabase.co";
 const SUPA_KEY = "sb_publishable_13lg1fm-zw7UHvCkVPdFFQ_07TSH4i5";
 const SH = () => ({ "Content-Type": "application/json", "apikey": SUPA_KEY, "Authorization": "Bearer " + SUPA_KEY });
-const storage = {
-  get: async (key) => {
-    try {
-      const r = await fetch(SUPA_URL + "/rest/v1/bco_storage?key=eq." + encodeURIComponent(key) + "&select=value&limit=1", { method: "GET", headers: SH(), mode: "cors" });
-      if (r.ok) { const d = await r.json(); if (d && d.length > 0) return { value: d[0].value };
-
 // Registra que la app se abrió — usado por NEXO Control para saber
 // cuántas personas usan cada vista. No interfiere con nada existente.
 function registrarApertura(appTag) {
@@ -27,7 +21,34 @@ function registrarApertura(appTag) {
     storage.set(key, valor).catch(() => {});
   } catch (e) {}
 }
- }
+
+// Vigía de errores — avisa a NEXO Control si algo se rompe en el navegador
+// de cualquier persona que use esta vista, sin que nadie tenga que reportarlo.
+function reportarError(mensaje, detalle) {
+  try {
+    fetch(SUPA_URL + "/rest/v1/app_errores", {
+      method: "POST",
+      headers: { ...SH(), "Prefer": "return=minimal" },
+      body: JSON.stringify({
+        app: "propietario",
+        mensaje: String(mensaje || "").slice(0, 500),
+        detalle: String(detalle || "").slice(0, 2000),
+        url: (typeof location !== "undefined" ? location.href : ""),
+        dispositivo: (typeof navigator !== "undefined" ? navigator.userAgent : ""),
+      }),
+    }).catch(() => {});
+  } catch (e) {}
+}
+if (typeof window !== "undefined") {
+  window.addEventListener("error", (ev) => { reportarError(ev.message, ev.error && ev.error.stack); });
+  window.addEventListener("unhandledrejection", (ev) => { reportarError("Promise rechazada: " + ((ev.reason && ev.reason.message) || ev.reason), ev.reason && ev.reason.stack); });
+}
+
+const storage = {
+  get: async (key) => {
+    try {
+      const r = await fetch(SUPA_URL + "/rest/v1/bco_storage?key=eq." + encodeURIComponent(key) + "&select=value&limit=1", { method: "GET", headers: SH(), mode: "cors" });
+      if (r.ok) { const d = await r.json(); if (d && d.length > 0) return { value: d[0].value }; }
     } catch { }
     try { const v = localStorage.getItem(key); return v ? { value: v } : null; } catch { return null; }
   },
@@ -136,7 +157,6 @@ function Entrada({ onEntrar, config, onGuardarConfig, codigoInicial, proyectoUrl
   const [editando, setEditando] = useState(false);
 
   async function entrar() {
-  useEffect(() => { registrarApertura("propietario"); }, []);
     const cod = codigo.trim().toUpperCase().replace(/\s+/g, "");
     if (!cod) { setError("Ingresá el código que te dio Belfast."); return; }
     if (!nombre.trim()) { setError("Ingresá tu nombre."); return; }
@@ -748,6 +768,7 @@ function Panel({ obra, nombreCliente, tareas, auditoria, formularios, avance, re
 }
 
 export default function ClientePropietarioApp() {
+  useEffect(() => { registrarApertura("propietario"); }, []);
   const [estado, setEstado] = useState("cargando"); // cargando | entrada | panel | error
   const [obra, setObra] = useState(null);
   const [nombreCliente, setNombreCliente] = useState("");

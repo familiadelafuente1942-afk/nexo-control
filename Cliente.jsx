@@ -130,6 +130,38 @@ function avisarErrorSync(key) {
   try { window.dispatchEvent(new CustomEvent("vv-sync-error", { detail: { key } })); } catch { }
 }
 
+// Registra que la app se abrió — usado por NEXO Control para saber
+// cuántas personas usan cada vista. No interfiere con nada existente.
+function registrarApertura(appTag) {
+  try {
+    const key = "apertura:" + appTag + ":" + Date.now() + ":" + Math.random().toString(36).slice(2, 8);
+    const valor = JSON.stringify({ app: appTag, ts: new Date().toISOString() });
+    storage.set(key, valor).catch(() => {});
+  } catch (e) {}
+}
+
+// Vigía de errores — avisa a NEXO Control si algo se rompe en el navegador
+// de cualquier persona que use esta vista, sin que nadie tenga que reportarlo.
+function reportarError(mensaje, detalle) {
+  try {
+    fetch(SUPA_URL + "/rest/v1/app_errores", {
+      method: "POST",
+      headers: { ...SH(), "Prefer": "return=minimal" },
+      body: JSON.stringify({
+        app: "cliente",
+        mensaje: String(mensaje || "").slice(0, 500),
+        detalle: String(detalle || "").slice(0, 2000),
+        url: (typeof location !== "undefined" ? location.href : ""),
+        dispositivo: (typeof navigator !== "undefined" ? navigator.userAgent : ""),
+      }),
+    }).catch(() => {});
+  } catch (e) {}
+}
+if (typeof window !== "undefined") {
+  window.addEventListener("error", (ev) => { reportarError(ev.message, ev.error && ev.error.stack); });
+  window.addEventListener("unhandledrejection", (ev) => { reportarError("Promise rechazada: " + ((ev.reason && ev.reason.message) || ev.reason), ev.reason && ev.reason.stack); });
+}
+
 function SyncBanner() {
   useEffect(() => { registrarApertura("cliente"); }, []);
   const [msg, setMsg] = useState("");
@@ -158,18 +190,7 @@ const storage = {
     try {
       let r = await intentar();
       if (!r.ok) r = await intentar();
-      if (!r.ok) { avisarErrorSync(key); return { value, ok: false };
-
-// Registra que la app se abrió — usado por NEXO Control para saber
-// cuántas personas usan cada vista. No interfiere con nada existente.
-function registrarApertura(appTag) {
-  try {
-    const key = "apertura:" + appTag + ":" + Date.now() + ":" + Math.random().toString(36).slice(2, 8);
-    const valor = JSON.stringify({ app: appTag, ts: new Date().toISOString() });
-    storage.set(key, valor).catch(() => {});
-  } catch (e) {}
-}
- }
+      if (!r.ok) { avisarErrorSync(key); return { value, ok: false }; }
     } catch { avisarErrorSync(key); return { value, ok: false }; }
     return { value, ok: true };
   },
