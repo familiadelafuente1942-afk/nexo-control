@@ -626,6 +626,7 @@ function Dashboard() {
   const [costoClaude, setCostoClaude] = useState({ mes: null, hoy: null, porApp: [] }); // null = todavía no cargó
   const [incidentes, setIncidentes] = useState([]);
   const [uptime, setUptime] = useState(null); // null = cargando; luego { pct, chequeos }
+  const [alertas, setAlertas] = useState([]);
   const [supaOk, setSupaOk] = useState(null); // null = chequeando, true/false
   const [appOk, setAppOk] = useState(null);
   const [salud, setSalud] = useState({ vercel: null, claude: null, resend: null });
@@ -792,6 +793,18 @@ function Dashboard() {
       setUptime({ pct: null, chequeos: 0 });
     }
 
+    // 9) Alertas activas — abiertas y cerradas solas por el cron, según las reglas configuradas
+    try {
+      const r = await fetch(
+        SUPA_URL + "/rest/v1/alertas?estado=eq.open&select=*&order=nivel.asc,actualizado_en.desc&limit=50",
+        { headers: SH() }
+      );
+      const data = await r.json();
+      setAlertas(Array.isArray(data) ? data : []);
+    } catch (e) {
+      // sin datos todavía — se asume sin alertas
+    }
+
     setUltimaActualizacion(new Date());
     setCargando(false);
   }, []);
@@ -939,6 +952,30 @@ function Dashboard() {
           !ok && e.ultimo && h("div", { style: { fontSize: 10.5, color: "#9AA5B1", marginTop: 4, lineHeight: 1.4 } }, e.ultimo.slice(0, 90))
         );
       })
+    ),
+
+    // Alertas activas — lo más urgente va primero, arriba de todo lo demás
+    alertas.length > 0 && h("div", null,
+      h("div", { className: "section-label" }, "Alertas activas"),
+      h("div", { style: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 8 } },
+        alertas.map((a) => {
+          const critica = a.nivel === "critical";
+          return h("div", {
+            key: a.id,
+            style: {
+              background: critica ? "rgba(255,69,58,.1)" : "rgba(255,214,10,.08)",
+              border: "1px solid " + (critica ? "rgba(255,69,58,.4)" : "rgba(255,214,10,.35)"),
+              borderRadius: 12, padding: "12px 14px",
+            },
+          },
+            h("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
+              h("span", { style: { fontSize: 11, fontWeight: 700, color: critica ? "#FF453A" : "#FFD60A" } }, critica ? "🔴 CRÍTICA" : "🟡 ATENCIÓN"),
+              h("span", { style: { fontSize: 13, fontWeight: 700, color: "var(--text)" } }, a.titulo)
+            ),
+            a.detalle && h("div", { style: { fontSize: 12, color: "var(--text-faint)", marginTop: 4 } }, a.detalle)
+          );
+        })
+      )
     ),
 
     // Actividad de HOY — para que no se pierda en un total que solo crece.
