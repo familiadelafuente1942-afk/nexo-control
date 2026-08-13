@@ -190,6 +190,10 @@
     .hero-stats{ grid-template-columns:repeat(2,1fr); row-gap:16px; }
     .hero-stat{ border-left:none !important; padding-left:0 !important; }
   }
+  @keyframes pulso{
+    0%, 100%{ opacity:1; transform:scale(1); }
+    50%{ opacity:.4; transform:scale(1.3); }
+  }
 </style>
 </head>
 <body>
@@ -721,6 +725,66 @@ function BarrasCosto7Dias({ data, width }) {
   );
 }
 
+// Sparkline tipo monitor de signos vitales — latencia de los últimos chequeos automáticos
+function SparklineLatencia({ historial, width }) {
+  width = width || 240;
+  const alto = 76;
+  if (!historial || historial.length < 2) {
+    return h("div", { style: { width: "100%", height: alto, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-faint)", fontSize: 11 } }, "Juntando datos…");
+  }
+  const valores = historial.map(p => p.ms);
+  const max = Math.max(...valores, 50);
+  const min = Math.min(...valores, 0);
+  const rango = Math.max(1, max - min);
+  const puntos = historial.map((p, i) => {
+    const x = (i / (historial.length - 1)) * width;
+    const y = alto - ((p.ms - min) / rango) * alto * 0.8 - alto * 0.08;
+    return x.toFixed(1) + "," + y.toFixed(1);
+  }).join(" ");
+  const ultimo = historial[historial.length - 1];
+  const ultimoX = width;
+  const ultimoY = alto - ((ultimo.ms - min) / rango) * alto * 0.8 - alto * 0.08;
+  const color = ultimo.ok ? "#3DDC84" : "#FF453A";
+  return h("svg", { width: "100%", height: alto, viewBox: `0 0 ${width} ${alto}`, preserveAspectRatio: "none" },
+    h("polyline", { points: puntos, fill: "none", stroke: color, strokeWidth: 2, strokeLinejoin: "round", strokeLinecap: "round", style: { filter: "drop-shadow(0 0 4px " + color + ")" } }),
+    h("circle", { cx: ultimoX, cy: ultimoY, r: 3.5, fill: color }),
+    h("circle", { cx: ultimoX, cy: ultimoY, r: 7, fill: "none", stroke: color, strokeWidth: 1.5, opacity: .5 })
+  );
+}
+
+// Gauge tipo velocímetro — señal de conexión general, con aguja y zonas de color
+function GaugeSenal({ score, size }) {
+  size = size || 148;
+  const cx = size / 2, cy = size * 0.6, r = size * 0.42;
+  function punto(v) {
+    const ang = 180 - (v / 100) * 180;
+    const rad = (ang * Math.PI) / 180;
+    return { x: cx + r * Math.cos(rad), y: cy - r * Math.sin(rad) };
+  }
+  function arco(v1, v2, color) {
+    const p1 = punto(v1), p2 = punto(v2);
+    return h("path", { d: "M " + p1.x + " " + p1.y + " A " + r + " " + r + " 0 0 1 " + p2.x + " " + p2.y, fill: "none", stroke: color, strokeWidth: 11, strokeLinecap: "round" });
+  }
+  if (score === null) {
+    return h("div", { style: { width: size, height: size * 0.62, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-faint)", fontSize: 11 } }, "Juntando datos…");
+  }
+  const s = Math.max(0, Math.min(100, score));
+  const punta = punto(s);
+  const color = s >= 75 ? "#3DDC84" : s >= 40 ? "#FFD60A" : "#FF453A";
+  const etiqueta = s >= 75 ? "Excelente" : s >= 40 ? "Inestable" : "Con problemas";
+  return h("div", { style: { display: "flex", flexDirection: "column", alignItems: "center" } },
+    h("svg", { width: size, height: size * 0.62, viewBox: "0 0 " + size + " " + (size * 0.62) },
+      arco(0, 40, "rgba(255,69,58,.3)"),
+      arco(40, 75, "rgba(255,214,10,.3)"),
+      arco(75, 100, "rgba(61,220,132,.3)"),
+      h("line", { x1: cx, y1: cy, x2: punta.x, y2: punta.y, stroke: color, strokeWidth: 3, strokeLinecap: "round" }),
+      h("circle", { cx, cy, r: 4.5, fill: color })
+    ),
+    h("div", { style: { fontSize: 17, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color, marginTop: -4 } }, Math.round(s) + "%"),
+    h("div", { style: { fontSize: 10.5, color: "var(--text-dim)" } }, etiqueta)
+  );
+}
+
 function Dashboard() {
   const [cargando, setCargando] = useState(true);
   const [actividad, setActividad] = useState({ obras: 0, personal: 0, matpedidos: 0, pedidos: 0, mensajes: 0, avance: 0, certificados: 0, bitacora: 0, auditoria: 0 });
@@ -729,7 +793,7 @@ function Dashboard() {
   const [estadoApps, setEstadoApps] = useState({ contratista: { errores: 0 }, cliente: { errores: 0 }, constructora: { errores: 0 }, propietario: { errores: 0 } });
   const [costoClaude, setCostoClaude] = useState({ mes: null, hoy: null, porApp: [], ultimos7: [] }); // null = todavía no cargó
   const [incidentes, setIncidentes] = useState([]);
-  const [uptime, setUptime] = useState(null); // null = cargando; luego { pct, chequeos }
+  const [uptime, setUptime] = useState({ pct: null, chequeos: 0, historial: [], senal: null }); // null = todavía no cargó
   const [alertas, setAlertas] = useState([]);
   const [supaOk, setSupaOk] = useState(null); // null = chequeando, true/false
   const [appOk, setAppOk] = useState(null);
@@ -891,22 +955,40 @@ function Dashboard() {
       // sin datos todavía — la sección queda vacía
     }
 
-    // 8) Uptime real, calculado sobre los chequeos automáticos de las últimas 24hs
+    // 8) Uptime real + historial de latencia (últimos chequeos automáticos, cada 10 min)
     try {
       const desde = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const r = await fetch(
-        SUPA_URL + "/rest/v1/system_health?creado_en=gte." + encodeURIComponent(desde) + "&select=vercel_ok,claude_ok,resend_ok,supabase_ok&limit=500",
+        SUPA_URL + "/rest/v1/system_health?creado_en=gte." + encodeURIComponent(desde) +
+          "&select=vercel_ok,claude_ok,resend_ok,supabase_ok,vercel_ms,claude_ms,resend_ms,supabase_ms,creado_en&order=creado_en.asc&limit=500",
         { headers: SH() }
       );
       const filas = await r.json();
       if (Array.isArray(filas) && filas.length > 0) {
         const ok = filas.filter(f => f.vercel_ok && f.claude_ok && f.resend_ok && f.supabase_ok).length;
-        setUptime({ pct: (ok / filas.length) * 100, chequeos: filas.length });
+
+        // Historial de latencia promedio por chequeo — los últimos 24 (≈ 4hs a 10min c/u)
+        const historial = filas.slice(-24).map(f => {
+          const ms = [f.vercel_ms, f.claude_ms, f.resend_ms, f.supabase_ms].filter(x => typeof x === "number");
+          const prom = ms.length ? ms.reduce((a, b) => a + b, 0) / ms.length : 0;
+          const okTodos = !!(f.vercel_ok && f.claude_ok && f.resend_ok && f.supabase_ok);
+          return { ms: Math.round(prom), ok: okTodos };
+        });
+
+        // Señal de conexión — combina cuántos servicios respondieron bien en el último chequeo
+        // con qué tan rápido lo hicieron (más lento = señal más débil, aunque esté "ok")
+        const ultimo = filas[filas.length - 1];
+        const serviciosOk = [ultimo.vercel_ok, ultimo.claude_ok, ultimo.resend_ok, ultimo.supabase_ok].filter(Boolean).length;
+        const msUltimo = [ultimo.vercel_ms, ultimo.claude_ms, ultimo.resend_ms, ultimo.supabase_ms].filter(x => typeof x === "number");
+        const promUltimo = msUltimo.length ? msUltimo.reduce((a, b) => a + b, 0) / msUltimo.length : 0;
+        const senal = Math.max(0, Math.min(100, (serviciosOk / 4) * 70 + Math.max(0, 1 - promUltimo / 900) * 30));
+
+        setUptime({ pct: (ok / filas.length) * 100, chequeos: filas.length, historial, senal });
       } else {
-        setUptime({ pct: null, chequeos: 0 });
+        setUptime({ pct: null, chequeos: 0, historial: [], senal: null });
       }
     } catch (e) {
-      setUptime({ pct: null, chequeos: 0 });
+      setUptime({ pct: null, chequeos: 0, historial: [], senal: null });
     }
 
     // 9) Alertas activas — abiertas y cerradas solas por el cron, según las reglas configuradas
@@ -1164,6 +1246,22 @@ function Dashboard() {
       h("div", { className: "gauge", style: { padding: "16px", display: "flex", flexDirection: "column", alignItems: "center" } },
         h("div", { className: "gauge-label", style: { marginBottom: 4, alignSelf: "flex-start" } }, "Horario de más actividad"),
         RelojActividad({ porHora: aperturas.porHora, size: 148 })
+      ),
+      h("div", { className: "gauge", style: { padding: "16px" } },
+        h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } },
+          h("div", { className: "gauge-label", style: { marginBottom: 0 } }, "Latencia en vivo"),
+          uptime.historial.length > 0 && h("div", { style: { display: "flex", alignItems: "center", gap: 4 } },
+            h("span", { style: { width: 6, height: 6, borderRadius: "50%", background: "#3DDC84", boxShadow: "0 0 6px #3DDC84", animation: "pulso 1.6s ease-in-out infinite" } }),
+            h("span", { style: { fontSize: 9, color: "var(--text-faint)", letterSpacing: ".05em" } }, "EN VIVO")
+          )
+        ),
+        SparklineLatencia({ historial: uptime.historial, width: 220 }),
+        uptime.historial.length > 0 && h("div", { style: { fontSize: 10, color: "var(--text-faint)", marginTop: 4 } }, "Promedio de Vercel · Claude · Resend · Supabase, últimos chequeos")
+      ),
+      h("div", { className: "gauge", style: { padding: "16px", display: "flex", flexDirection: "column", alignItems: "center" } },
+        h("div", { className: "gauge-label", style: { marginBottom: 4, alignSelf: "flex-start" } }, "Señal de conexión"),
+        GaugeSenal({ score: uptime.senal, size: 148 }),
+        uptime.pct !== null && h("div", { style: { fontSize: 10, color: "var(--text-faint)", marginTop: 6 } }, "Uptime 24hs: " + uptime.pct.toFixed(1) + "%")
       )
     ),
 
