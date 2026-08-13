@@ -1579,15 +1579,23 @@ function PantallaClientes() {
     if (!form.nombre.trim()) return;
     setGuardando(true);
     try {
-      await fetch(SUPA_URL + "/rest/v1/clientes", {
+      const r = await fetch(SUPA_URL + "/rest/v1/clientes", {
         method: "POST",
         headers: { ...SH(), Prefer: "return=minimal" },
         body: JSON.stringify({ ...form, estado: "activo" }),
       });
+      if (!r.ok) {
+        const detalle = await r.text().catch(() => "");
+        alert("No se pudo guardar el cliente (HTTP " + r.status + "):\n" + detalle);
+        setGuardando(false);
+        return;
+      }
       setForm({ nombre: "", contacto: "", notas: "", supa_url: "", supa_anon_key: "" });
       setMostrarForm(false);
       await cargarClientes();
-    } catch (e) { }
+    } catch (e) {
+      alert("No se pudo guardar el cliente: " + e.message);
+    }
     setGuardando(false);
   }
 
