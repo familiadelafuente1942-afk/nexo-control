@@ -516,7 +516,7 @@ const APP_URL = "https://vvconstruccionesultimo.vercel.app";
 const AUTH_URL = "https://bxhjgxzvayszfqwlwinq.supabase.co/functions/v1/a-nexo-auth";
 const HEALTH_URL = "https://bxhjgxzvayszfqwlwinq.supabase.co/functions/v1/hyper-worker";
 
-const SH = () => ({ apikey: SUPA_ANON, Authorization: "Bearer " + SUPA_ANON });
+const SH = () => ({ "Content-Type": "application/json", apikey: SUPA_ANON, Authorization: "Bearer " + SUPA_ANON });
 
 // Claves reales usadas por la app VVCONSTRUCCIONESULTIMO dentro de bco_storage
 const KEYS = ["vv_obras", "vv_personal", "vv_matpedidos", "vv_pedidos", "vv_mensajes", "vv_avance", "vv_certif_sem", "vv_bitacora", "vv_auditoria"];
