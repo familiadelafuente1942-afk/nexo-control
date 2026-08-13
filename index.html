@@ -509,7 +509,8 @@ const h = React.createElement;
 const SUPA_URL = "https://bxhjgxzvayszfqwlwinq.supabase.co";
 const SUPA_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4aGpneHp2YXlzemZxd2x3aW5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTI4NTMsImV4cCI6MjA5ODQyODg1M30.Wq7TbIUc0t3u7vbmi_yU49BlOaWzl9sByySBpV1HcZQ";
 const APP_URL = "https://vvconstruccionesultimo.vercel.app";
-const PASSWORD = "nexo2026control"; // cambiar acá si querés otra clave
+const AUTH_URL = "https://bxhjgxzvayszfqwlwinq.supabase.co/functions/v1/a-nexo-auth";
+const HEALTH_URL = "https://bxhjgxzvayszfqwlwinq.supabase.co/functions/v1/hyper-worker";
 
 const SH = () => ({ apikey: SUPA_ANON, Authorization: "Bearer " + SUPA_ANON });
 
@@ -550,14 +551,29 @@ function contarRegistrosAgrupados(raw) {
 function Gate({ onUnlock }) {
   const [val, setVal] = useState("");
   const [err, setErr] = useState("");
+  const [verificando, setVerificando] = useState(false);
 
-  function intentar() {
-    if (val === PASSWORD) {
-      try { localStorage.setItem("nexo_control_ok", "1"); } catch (e) {}
-      onUnlock();
-    } else {
-      setErr("Clave incorrecta.");
+  async function intentar() {
+    if (!val || verificando) return;
+    setVerificando(true);
+    setErr("");
+    try {
+      const r = await fetch(AUTH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: SUPA_ANON, Authorization: "Bearer " + SUPA_ANON },
+        body: JSON.stringify({ password: val }),
+      });
+      const data = await r.json();
+      if (data && data.ok) {
+        try { localStorage.setItem("nexo_control_ok", "1"); } catch (e) {}
+        onUnlock();
+      } else {
+        setErr("Clave incorrecta.");
+      }
+    } catch (e) {
+      setErr("No se pudo verificar — revisá tu conexión.");
     }
+    setVerificando(false);
   }
 
   return h("div", { className: "gate" },
@@ -574,7 +590,7 @@ function Gate({ onUnlock }) {
         onKeyDown: e => { if (e.key === "Enter") intentar(); },
         autoFocus: true
       }),
-      h("button", { className: "gate-btn", onClick: intentar }, "Entrar"),
+      h("button", { className: "gate-btn", onClick: intentar, disabled: verificando }, verificando ? "Verificando…" : "Entrar"),
       h("div", { className: "gate-error" }, err)
     )
   );
@@ -589,6 +605,7 @@ function Dashboard() {
   const [aperturas, setAperturas] = useState({ total: 0, hoy: 0, porVista: { contratista: 0, cliente: 0, constructora: 0, propietario: 0 } });
   const [supaOk, setSupaOk] = useState(null); // null = chequeando, true/false
   const [appOk, setAppOk] = useState(null);
+  const [salud, setSalud] = useState({ vercel: null, claude: null, resend: null });
   const [ultimaActualizacion, setUltimaActualizacion] = useState(null);
   const [chipAbierto, setChipAbierto] = useState(null);
 
@@ -603,12 +620,15 @@ function Dashboard() {
       setSupaOk(false);
     }
 
-    // 2) Chequeo de la app (Vercel) — no-cors: solo confirma que responde algo,
-    // no podemos leer el código de estado real por la política del navegador.
+    // 2) Chequeo real de Vercel, Claude y Resend — todo del lado del servidor,
+    // ninguna clave viaja al navegador.
     try {
-      await fetch(APP_URL, { mode: "no-cors" });
-      setAppOk(true);
+      const r = await fetch(HEALTH_URL, { headers: { apikey: SUPA_ANON, Authorization: "Bearer " + SUPA_ANON } });
+      const data = await r.json();
+      setSalud({ vercel: data.vercel, claude: data.claude, resend: data.resend });
+      setAppOk(!!(data.vercel && data.vercel.ok));
     } catch (e) {
+      setSalud({ vercel: { ok: false, error: "sin respuesta" }, claude: { ok: false, error: "sin respuesta" }, resend: { ok: false, error: "sin respuesta" } });
       setAppOk(false);
     }
 
@@ -696,21 +716,21 @@ function Dashboard() {
     },
     {
       nombre: "Aplicación (Vercel)",
-      estado: appOk === null ? "y" : appOk ? "g" : "r",
-      detalle: appOk === null ? "verificando…" : appOk ? "alcanzable" : "sin respuesta",
+      estado: salud.vercel === null ? "y" : salud.vercel.ok ? "g" : "r",
+      detalle: salud.vercel === null ? "verificando…" : salud.vercel.ok ? `último deploy: ${salud.vercel.estadoDeploy || "—"} · ${salud.vercel.latenciaMs}ms` : (salud.vercel.error || "sin respuesta"),
       detalleExtra: "vvconstruccionesultimo.vercel.app",
     },
     {
       nombre: "IA (Claude API)",
-      estado: "g",
-      detalle: "sin incidentes reportados",
-      detalleExtra: "Estado no verificado automáticamente todavía",
+      estado: salud.claude === null ? "y" : salud.claude.ok ? "g" : "r",
+      detalle: salud.claude === null ? "verificando…" : salud.claude.ok ? `responde en ${salud.claude.latenciaMs}ms` : (salud.claude.error || "sin respuesta"),
+      detalleExtra: "Chequeo real cada vez que actualizás el panel",
     },
     {
       nombre: "Envío de mails (Resend)",
-      estado: "g",
-      detalle: "sin incidentes reportados",
-      detalleExtra: "Estado no verificado automáticamente todavía",
+      estado: salud.resend === null ? "y" : salud.resend.ok ? "g" : "r",
+      detalle: salud.resend === null ? "verificando…" : salud.resend.ok ? `responde en ${salud.resend.latenciaMs}ms` : (salud.resend.error || "sin respuesta"),
+      detalleExtra: "Chequeo real cada vez que actualizás el panel",
     },
   ];
 
