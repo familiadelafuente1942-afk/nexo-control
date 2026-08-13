@@ -862,27 +862,36 @@ function Dashboard() {
       // si falla, dejamos los números en 0 — el estado de Supabase ya lo refleja arriba
     }
 
-    // 4) Traer registros de apertura de app (key con prefijo "apertura:")
+    // 4) Aperturas de app — tabla liviana propia (no bco_storage). El total y "hoy"
+    // se piden como CONTEO puro (Postgres cuenta, no manda filas). El desglose por
+    // vista/hora usa una ventana acotada de 30 días, para no traer todo el historial.
     try {
-      const r = await fetch(
-        SUPA_URL + "/rest/v1/bco_storage?key=like." + encodeURIComponent("apertura:") + "*&select=key&limit=5000",
-        { headers: SH() }
-      );
-      const filas = await r.json();
-      const hoyStr = new Date().toISOString().slice(0, 10);
-      let total = 0, hoy = 0;
+      const inicioHoyISO = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
+      const desde30ISO = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      const [rTotal, rHoy, rVentana] = await Promise.all([
+        fetch(SUPA_URL + "/rest/v1/aperturas?select=id", { headers: { ...SH(), Prefer: "count=exact", Range: "0-0" } }),
+        fetch(SUPA_URL + "/rest/v1/aperturas?select=id&creado_en=gte." + encodeURIComponent(inicioHoyISO), { headers: { ...SH(), Prefer: "count=exact", Range: "0-0" } }),
+        fetch(SUPA_URL + "/rest/v1/aperturas?select=app,creado_en&creado_en=gte." + encodeURIComponent(desde30ISO) + "&limit=20000", { headers: SH() }),
+      ]);
+
+      const totalDesdeRango = (r) => {
+        const cr = r.headers.get("content-range"); // formato "0-0/1234"
+        if (!cr) return 0;
+        const total = cr.split("/")[1];
+        return total && total !== "*" ? Number(total) : 0;
+      };
+
+      const total = totalDesdeRango(rTotal);
+      const hoy = totalDesdeRango(rHoy);
+      const filasVentana = await rVentana.json();
+
       const porVista = { contratista: 0, cliente: 0, constructora: 0, propietario: 0 };
       const porHora = new Array(24).fill(0);
-
-      (filas || []).forEach(f => {
-        const partes = (f.key || "").split(":");
-        // formato: apertura:<vista>:<timestampMs>:<random>
-        const vista = partes[1];
-        const ts = Number(partes[2]);
-        total++;
-        if (vista && porVista.hasOwnProperty(vista)) porVista[vista]++;
-        if (ts && new Date(ts).toISOString().slice(0, 10) === hoyStr) hoy++;
-        if (ts) porHora[new Date(ts).getHours()]++;
+      (filasVentana || []).forEach(f => {
+        if (f.app && porVista.hasOwnProperty(f.app)) porVista[f.app]++;
+        const fecha = new Date(f.creado_en);
+        if (!isNaN(fecha)) porHora[fecha.getHours()]++;
       });
 
       setAperturas({ total, hoy, porVista, porHora });
@@ -1532,7 +1541,10 @@ function DetalleCliente({ cliente, onVolver, onActualizado }) {
 
       try {
         const [rAperturas, rMensajes, rUsoMes, rErroresMes] = await Promise.all([
-          fetch(cliente.supa_url + "/rest/v1/bco_storage?key=like." + encodeURIComponent("apertura:") + "*&select=key&limit=20000", { headers }).catch(() => null),
+          fetch(
+            cliente.supa_url + "/rest/v1/aperturas?select=id&creado_en=gte." + encodeURIComponent(inicioISO) + "&creado_en=lt." + encodeURIComponent(finISO),
+            { headers: { ...headers, Prefer: "count=exact", Range: "0-0" } }
+          ).catch(() => null),
           fetch(cliente.supa_url + "/rest/v1/bco_storage?key=eq.vv_mensajes&select=value", { headers }).catch(() => null),
           fetch(cliente.supa_url + "/rest/v1/ai_usage?creado_en=gte." + encodeURIComponent(inicioISO) + "&creado_en=lt." + encodeURIComponent(finISO) + "&select=costo_usd", { headers }).catch(() => null),
           fetch(cliente.supa_url + "/rest/v1/app_errores?creado_en=gte." + encodeURIComponent(inicioISO) + "&creado_en=lt." + encodeURIComponent(finISO) + "&select=id", { headers }).catch(() => null),
@@ -1540,11 +1552,9 @@ function DetalleCliente({ cliente, onVolver, onActualizado }) {
 
         let aperturasMes = 0;
         if (rAperturas && rAperturas.ok) {
-          const filas = await rAperturas.json();
-          (filas || []).forEach(f => {
-            const ts = Number((f.key || "").split(":")[2]);
-            if (ts >= inicioMs && ts < finMs) aperturasMes++;
-          });
+          const cr = rAperturas.headers.get("content-range");
+          const totalStr = cr ? cr.split("/")[1] : null;
+          aperturasMes = totalStr && totalStr !== "*" ? Number(totalStr) : 0;
         }
 
         let fotosMes = 0;
