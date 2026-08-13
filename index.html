@@ -1347,12 +1347,326 @@ function Dashboard() {
   );
 }
 
+// ════════════════════════════════════════════════════════════
+// CLIENTES — cuando NEXO/ConstruIA se venda a otras empresas,
+// cada una es un "cliente" con su propio Supabase separado.
+// Esta pantalla permite entrar al panel de salud de cada uno.
+// ════════════════════════════════════════════════════════════
+
+function mesActualISO() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+}
+
+function opcionesDeMes(cantidad) {
+  const opciones = [];
+  const ahora = new Date();
+  for (let i = 0; i < cantidad; i++) {
+    const d = new Date(ahora.getFullYear(), ahora.getMonth() - i, 1);
+    const valor = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+    const etiqueta = d.toLocaleDateString("es-AR", { month: "long", year: "numeric" });
+    opciones.push({ valor, etiqueta: etiqueta.charAt(0).toUpperCase() + etiqueta.slice(1) });
+  }
+  return opciones;
+}
+
+function DetalleCliente({ cliente, onVolver }) {
+  const [cargando, setCargando] = useState(true);
+  const [datos, setDatos] = useState({ instrumentado: false });
+  const [mes, setMes] = useState(mesActualISO());
+  const [informe, setInforme] = useState(null); // null = cargando informe del mes
+  const [cargandoInforme, setCargandoInforme] = useState(false);
+
+  useEffect(() => {
+    let cancelado = false;
+    async function cargar() {
+      setCargando(true);
+      if (!cliente.supa_url || !cliente.supa_anon_key) {
+        setDatos({ instrumentado: false, motivo: "Este cliente todavía no tiene un Supabase configurado." });
+        setCargando(false);
+        return;
+      }
+      const headers = { apikey: cliente.supa_anon_key, Authorization: "Bearer " + cliente.supa_anon_key };
+      try {
+        const [rErrores, rIncidentes, rUso] = await Promise.all([
+          fetch(cliente.supa_url + "/rest/v1/app_errores?select=id&order=creado_en.desc&limit=1", { headers }),
+          fetch(cliente.supa_url + "/rest/v1/incidentes?estado=eq.open&select=id,app,mensaje,ocurrencias&limit=20", { headers }),
+          fetch(cliente.supa_url + "/rest/v1/ai_usage?select=costo_usd&limit=1000", { headers }),
+        ]);
+        if (!rErrores.ok && !rIncidentes.ok && !rUso.ok) {
+          if (!cancelado) setDatos({ instrumentado: false, motivo: "Todavía no tiene las tablas de NEXO instaladas en su Supabase." });
+          return;
+        }
+        const incidentesAbiertos = rIncidentes.ok ? await rIncidentes.json() : [];
+        const usoFilas = rUso.ok ? await rUso.json() : [];
+        const costoTotal = (usoFilas || []).reduce((a, f) => a + (Number(f.costo_usd) || 0), 0);
+        if (!cancelado) setDatos({ instrumentado: true, incidentesAbiertos: incidentesAbiertos || [], costoTotal });
+      } catch (e) {
+        if (!cancelado) setDatos({ instrumentado: false, motivo: "No se pudo conectar a su Supabase — revisá la URL/clave cargada." });
+      } finally {
+        if (!cancelado) setCargando(false);
+      }
+    }
+    cargar();
+    return () => { cancelado = true; };
+  }, [cliente.id]);
+
+  // Informe mensual — aperturas, mensajes/fotos, errores y costo de IA del mes elegido.
+  // Usa las mismas convenciones que V+V (bco_storage, claves "apertura:", tabla ai_usage/app_errores),
+  // así que funciona apenas el cliente tenga su sistema instrumentado igual.
+  useEffect(() => {
+    let cancelado = false;
+    async function cargarInforme() {
+      if (!datos.instrumentado || !cliente.supa_url || !cliente.supa_anon_key) return;
+      setCargandoInforme(true);
+      const headers = { apikey: cliente.supa_anon_key, Authorization: "Bearer " + cliente.supa_anon_key };
+      const [anio, mesNum] = mes.split("-").map(Number);
+      const inicioMs = new Date(anio, mesNum - 1, 1).getTime();
+      const finMs = new Date(anio, mesNum, 1).getTime();
+      const inicioISO = new Date(inicioMs).toISOString();
+      const finISO = new Date(finMs).toISOString();
+
+      try {
+        const [rAperturas, rMensajes, rUsoMes, rErroresMes] = await Promise.all([
+          fetch(cliente.supa_url + "/rest/v1/bco_storage?key=like." + encodeURIComponent("apertura:") + "*&select=key&limit=20000", { headers }).catch(() => null),
+          fetch(cliente.supa_url + "/rest/v1/bco_storage?key=eq.vv_mensajes&select=value", { headers }).catch(() => null),
+          fetch(cliente.supa_url + "/rest/v1/ai_usage?creado_en=gte." + encodeURIComponent(inicioISO) + "&creado_en=lt." + encodeURIComponent(finISO) + "&select=costo_usd", { headers }).catch(() => null),
+          fetch(cliente.supa_url + "/rest/v1/app_errores?creado_en=gte." + encodeURIComponent(inicioISO) + "&creado_en=lt." + encodeURIComponent(finISO) + "&select=id", { headers }).catch(() => null),
+        ]);
+
+        let aperturasMes = 0;
+        if (rAperturas && rAperturas.ok) {
+          const filas = await rAperturas.json();
+          (filas || []).forEach(f => {
+            const ts = Number((f.key || "").split(":")[2]);
+            if (ts >= inicioMs && ts < finMs) aperturasMes++;
+          });
+        }
+
+        let fotosMes = 0;
+        if (rMensajes && rMensajes.ok) {
+          const filas = await rMensajes.json();
+          if (filas && filas[0] && filas[0].value) {
+            try {
+              const arr = JSON.parse(filas[0].value);
+              (arr || []).forEach(m => {
+                if (m && typeof m.ts === "number" && m.ts >= inicioMs && m.ts < finMs) {
+                  fotosMes += (m.archivos && m.archivos.length) ? m.archivos.length : 1;
+                }
+              });
+            } catch (e) { }
+          }
+        }
+
+        const usoFilas = (rUsoMes && rUsoMes.ok) ? await rUsoMes.json() : [];
+        const costoMes = (usoFilas || []).reduce((a, f) => a + (Number(f.costo_usd) || 0), 0);
+
+        const erroresFilas = (rErroresMes && rErroresMes.ok) ? await rErroresMes.json() : [];
+
+        if (!cancelado) setInforme({ aperturasMes, fotosMes, costoMes, erroresMes: (erroresFilas || []).length });
+      } catch (e) {
+        if (!cancelado) setInforme({ error: true });
+      } finally {
+        if (!cancelado) setCargandoInforme(false);
+      }
+    }
+    cargarInforme();
+    return () => { cancelado = true; };
+  }, [cliente.id, mes, datos.instrumentado]);
+
+  return h("div", { className: "shell" },
+    h("button", {
+      onClick: onVolver,
+      style: { background: "none", border: "none", color: "var(--brass)", fontSize: 12.5, fontWeight: 700, cursor: "pointer", padding: 0, marginBottom: 14, display: "flex", alignItems: "center", gap: 4 },
+    }, "← Volver a Clientes"),
+    h("div", { className: "hero" },
+      h("div", { className: "hero-row" },
+        h("div", { style: { flex: 1 } },
+          h("div", { className: "hero-title" }, cliente.nombre),
+          h("div", { className: "hero-sub" }, cliente.contacto || "Sin contacto cargado")
+        ),
+        h("span", {
+          style: {
+            fontSize: 10.5, fontWeight: 700, padding: "4px 10px", borderRadius: 20, textTransform: "uppercase",
+            color: cliente.estado === "activo" ? "#3DDC84" : cliente.estado === "pausado" ? "#FFD60A" : "#7A8699",
+            background: cliente.estado === "activo" ? "rgba(61,220,132,.12)" : cliente.estado === "pausado" ? "rgba(255,214,10,.12)" : "rgba(122,134,153,.12)",
+          },
+        }, cliente.estado)
+      )
+    ),
+    cargando
+      ? h("div", { style: { textAlign: "center", color: "var(--text-faint)", fontSize: 13, padding: "40px 0" } }, "Conectando con el sistema de " + cliente.nombre + "…")
+      : !datos.instrumentado
+        ? h("div", { className: "incidents-empty" }, datos.motivo || "Sin datos disponibles todavía.")
+        : h("div", null,
+            h("div", { className: "gauge-grid" },
+              h("div", { className: "gauge" },
+                h("div", { className: "gauge-label" }, "Incidentes abiertos"),
+                h("div", { className: "gauge-num" + (datos.incidentesAbiertos.length === 0 ? " zero" : "") }, datos.incidentesAbiertos.length)
+              ),
+              h("div", { className: "gauge" },
+                h("div", { className: "gauge-label" }, "Costo de IA acumulado"),
+                h("div", { className: "gauge-num" }, "$" + datos.costoTotal.toFixed(2))
+              )
+            ),
+            datos.incidentesAbiertos.length > 0 && h("div", { style: { marginTop: 14 } },
+              h("div", { className: "section-label" }, "Incidentes de " + cliente.nombre),
+              h("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
+                datos.incidentesAbiertos.map(inc =>
+                  h("div", { key: inc.id, style: { background: "var(--panel)", border: "1px solid rgba(255,69,58,.35)", borderRadius: 12, padding: "12px 14px" } },
+                    h("div", { style: { fontSize: 11, fontWeight: 700, color: "#FF453A" } }, inc.app),
+                    h("div", { style: { fontSize: 12.5, color: "var(--text)", marginTop: 3 } }, (inc.mensaje || "").slice(0, 140)),
+                    h("div", { style: { fontSize: 10.5, color: "var(--text-faint)", marginTop: 3 } }, inc.ocurrencias + " ocurrencias")
+                  )
+                )
+              )
+            )
+          ),
+    datos.instrumentado && h("div", { style: { marginTop: 20 } },
+      h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 } },
+        h("div", { className: "section-label", style: { margin: 0, flex: 1 } }, "Informe mensual de uso"),
+        h("select", {
+          value: mes, onChange: e => setMes(e.target.value),
+          style: { background: "var(--panel)", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 8, padding: "6px 10px", fontSize: 12 },
+        }, opcionesDeMes(6).map(o => h("option", { key: o.valor, value: o.valor }, o.etiqueta)))
+      ),
+      cargandoInforme || !informe
+        ? h("div", { style: { textAlign: "center", color: "var(--text-faint)", fontSize: 12.5, padding: "24px 0" } }, "Calculando el informe…")
+        : informe.error
+          ? h("div", { className: "incidents-empty" }, "No se pudo calcular el informe de este mes.")
+          : h("div", { className: "gauge-grid" },
+              [
+                { label: "Aperturas del mes", val: informe.aperturasMes },
+                { label: "Fotos / mensajes subidos", val: informe.fotosMes },
+                { label: "Errores del mes", val: informe.erroresMes },
+                { label: "Costo de IA del mes", val: "$" + informe.costoMes.toFixed(2) },
+              ].map((g, i) =>
+                h("div", { className: "gauge", key: i },
+                  h("div", { className: "gauge-label" }, g.label),
+                  h("div", { className: "gauge-num" + (g.val === 0 ? " zero" : "") }, g.val)
+                )
+              )
+            )
+    ),
+    cliente.notas && h("div", { style: { marginTop: 18 } },
+      h("div", { className: "section-label" }, "Notas"),
+      h("div", { style: { fontSize: 12.5, color: "var(--text-dim)", lineHeight: 1.6 } }, cliente.notas)
+    )
+  );
+}
+
+function PantallaClientes() {
+  const [clientes, setClientes] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [seleccionado, setSeleccionado] = useState(null);
+  const [mostrarForm, setMostrarForm] = useState(false);
+  const [form, setForm] = useState({ nombre: "", contacto: "", notas: "", supa_url: "", supa_anon_key: "" });
+  const [guardando, setGuardando] = useState(false);
+
+  const cargarClientes = useCallback(async () => {
+    setCargando(true);
+    try {
+      const r = await fetch(SUPA_URL + "/rest/v1/clientes?select=*&order=nombre.asc", { headers: SH() });
+      const data = await r.json();
+      setClientes(Array.isArray(data) ? data : []);
+    } catch (e) { }
+    setCargando(false);
+  }, []);
+
+  useEffect(() => { cargarClientes(); }, [cargarClientes]);
+
+  async function guardarCliente() {
+    if (!form.nombre.trim()) return;
+    setGuardando(true);
+    try {
+      await fetch(SUPA_URL + "/rest/v1/clientes", {
+        method: "POST",
+        headers: { ...SH(), Prefer: "return=minimal" },
+        body: JSON.stringify({ ...form, estado: "activo" }),
+      });
+      setForm({ nombre: "", contacto: "", notas: "", supa_url: "", supa_anon_key: "" });
+      setMostrarForm(false);
+      await cargarClientes();
+    } catch (e) { }
+    setGuardando(false);
+  }
+
+  if (seleccionado) return h(DetalleCliente, { cliente: seleccionado, onVolver: () => setSeleccionado(null) });
+
+  return h("div", { className: "shell" },
+    h("div", { className: "topbar" },
+      h("div", { className: "brand" },
+        h("div", { className: "brand-mark" }, h("span")),
+        h("div", null, h("div", { className: "brand-name" }, "Clientes"), h("div", { className: "brand-sub" }, "Cada empresa que usa NEXO, por separado"))
+      ),
+      h("button", { className: "btn-refresh", onClick: () => setMostrarForm(v => !v) }, mostrarForm ? "Cancelar" : "+ Agregar cliente")
+    ),
+    mostrarForm && h("div", { className: "gauge", style: { padding: 16, marginBottom: 16, display: "flex", flexDirection: "column", gap: 8 } },
+      h("input", { placeholder: "Nombre de la empresa (ej: Belfast Construction Mgmt)", value: form.nombre, onChange: e => setForm({ ...form, nombre: e.target.value }), style: inputStyle }),
+      h("input", { placeholder: "Contacto (email o teléfono)", value: form.contacto, onChange: e => setForm({ ...form, contacto: e.target.value }), style: inputStyle }),
+      h("input", { placeholder: "URL de su Supabase (https://xxxx.supabase.co)", value: form.supa_url, onChange: e => setForm({ ...form, supa_url: e.target.value }), style: inputStyle }),
+      h("input", { placeholder: "Clave anon/publishable de su Supabase", value: form.supa_anon_key, onChange: e => setForm({ ...form, supa_anon_key: e.target.value }), style: inputStyle }),
+      h("textarea", { placeholder: "Notas (plan, fecha de alta, lo que sea útil)", value: form.notas, onChange: e => setForm({ ...form, notas: e.target.value }), rows: 2, style: { ...inputStyle, resize: "vertical" } }),
+      h("button", {
+        onClick: guardarCliente, disabled: guardando || !form.nombre.trim(),
+        style: { background: "var(--brass)", color: "#151109", border: "none", borderRadius: 8, padding: "10px", fontWeight: 700, fontSize: 13, cursor: "pointer", opacity: guardando ? .6 : 1 },
+      }, guardando ? "Guardando…" : "Guardar cliente")
+    ),
+    cargando
+      ? h("div", { style: { textAlign: "center", color: "var(--text-faint)", padding: "40px 0" } }, "Cargando…")
+      : clientes.length === 0
+        ? h("div", { className: "incidents-empty" }, "Todavía no cargaste ningún cliente. V+V es de uso interno — acá van las empresas que usen NEXO/ConstruIA como clientes.")
+        : h("div", { className: "chip-grid" },
+            clientes.map(c =>
+              h("div", {
+                key: c.id, className: "chip", onClick: () => setSeleccionado(c),
+              },
+                h("div", { className: "chip-top" },
+                  h("div", { className: "chip-name" }, c.nombre),
+                  h("span", { className: "chip-led " + (c.estado === "activo" ? "g" : c.estado === "pausado" ? "y" : "r") })
+                ),
+                h("div", { className: "chip-detail" }, c.contacto || "Sin contacto"),
+                h("div", { style: { fontSize: 10, color: "var(--text-faint)", marginTop: 6 } }, c.supa_url ? "Conectado a su Supabase" : "Sin Supabase configurado")
+              )
+            )
+          )
+  );
+}
+
+const inputStyle = {
+  background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 12px",
+  color: "var(--text)", fontSize: 13, fontFamily: "'Inter', sans-serif", width: "100%",
+};
+
 function App() {
   const [unlocked, setUnlocked] = useState(() => {
     try { return localStorage.getItem("nexo_control_ok") === "1"; } catch (e) { return false; }
   });
+  const [pantalla, setPantalla] = useState("resumen"); // "resumen" | "clientes"
   if (!unlocked) return h(Gate, { onUnlock: () => setUnlocked(true) });
-  return h(Dashboard);
+  return h("div", null,
+    h("div", { style: { display: "flex", justifyContent: "center", gap: 8, padding: "14px 0 0" } },
+      h("button", {
+        onClick: () => setPantalla("resumen"),
+        style: {
+          background: pantalla === "resumen" ? "var(--brass)" : "var(--panel)",
+          color: pantalla === "resumen" ? "#151109" : "var(--text-dim)",
+          border: "1px solid " + (pantalla === "resumen" ? "var(--brass)" : "var(--border)"),
+          borderRadius: 20, padding: "7px 16px", fontSize: 12.5, fontWeight: 700, cursor: "pointer",
+        },
+      }, "Resumen"),
+      h("button", {
+        onClick: () => setPantalla("clientes"),
+        style: {
+          background: pantalla === "clientes" ? "var(--brass)" : "var(--panel)",
+          color: pantalla === "clientes" ? "#151109" : "var(--text-dim)",
+          border: "1px solid " + (pantalla === "clientes" ? "var(--brass)" : "var(--border)"),
+          borderRadius: 20, padding: "7px 16px", fontSize: 12.5, fontWeight: 700, cursor: "pointer",
+        },
+      }, "Clientes")
+    ),
+    pantalla === "resumen" ? h(Dashboard) : h(PantallaClientes)
+  );
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(h(App));
