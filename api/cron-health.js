@@ -79,8 +79,6 @@ async function chequearIncidentesGraves() {
 }
 
 export default async function handler(req, res) {
-  // Protección: deja pasar al cron real de Vercel, o a vos si probás a mano
-  // agregando ?secreto=nexo2026cron al final de la URL.
   const esVercelCron = (req.headers["user-agent"] || "").includes("vercel-cron");
   const secretoOk = (req.query && req.query.secreto) === "nexo2026cron";
   if (!esVercelCron && !secretoOk) {
@@ -105,7 +103,7 @@ export default async function handler(req, res) {
       supabase_ms: supa.ms,
     };
 
-    await fetch(SUPA_URL + "/rest/v1/system_health", {
+    const rGuardar = await fetch(SUPA_URL + "/rest/v1/system_health", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -116,13 +114,19 @@ export default async function handler(req, res) {
       body: JSON.stringify(fila),
     });
 
+    if (!rGuardar.ok) {
+      const detalleError = await rGuardar.text().catch(() => "");
+      res.status(200).json({ ok: false, fila, guardadoOk: false, errorGuardado: "HTTP " + rGuardar.status + " — " + detalleError });
+      return;
+    }
+
     await Promise.allSettled([
       chequearServiciosCaidos(),
       chequearGastoClaudeAnomalo(),
       chequearIncidentesGraves(),
     ]);
 
-    res.status(200).json({ ok: true, fila });
+    res.status(200).json({ ok: true, guardadoOk: true, fila });
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
