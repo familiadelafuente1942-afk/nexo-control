@@ -1370,12 +1370,50 @@ function opcionesDeMes(cantidad) {
   return opciones;
 }
 
-function DetalleCliente({ cliente, onVolver }) {
+function DetalleCliente({ cliente, onVolver, onActualizado }) {
   const [cargando, setCargando] = useState(true);
   const [datos, setDatos] = useState({ instrumentado: false });
   const [mes, setMes] = useState(mesActualISO());
   const [informe, setInforme] = useState(null); // null = cargando informe del mes
   const [cargandoInforme, setCargandoInforme] = useState(false);
+  const [editando, setEditando] = useState(false);
+  const [form, setForm] = useState({
+    nombre: cliente.nombre || "", contacto: cliente.contacto || "", notas: cliente.notas || "",
+    supa_url: cliente.supa_url || "", supa_anon_key: cliente.supa_anon_key || "", estado: cliente.estado || "activo",
+  });
+  const [guardando, setGuardando] = useState(false);
+
+  async function guardarEdicion() {
+    setGuardando(true);
+    try {
+      const r = await fetch(SUPA_URL + "/rest/v1/clientes?id=eq." + cliente.id, {
+        method: "PATCH",
+        headers: { ...SH(), Prefer: "return=minimal" },
+        body: JSON.stringify(form),
+      });
+      if (!r.ok) {
+        const detalle = await r.text().catch(() => "");
+        alert("No se pudo guardar (HTTP " + r.status + "):\n" + detalle);
+        setGuardando(false);
+        return;
+      }
+      setEditando(false);
+      if (onActualizado) onActualizado({ ...cliente, ...form });
+    } catch (e) {
+      alert("No se pudo guardar: " + e.message);
+    }
+    setGuardando(false);
+  }
+
+  async function eliminarCliente() {
+    if (!confirm("¿Eliminar a " + cliente.nombre + " de la lista de clientes? Esto no borra nada de su Supabase, solo el registro acá.")) return;
+    try {
+      await fetch(SUPA_URL + "/rest/v1/clientes?id=eq." + cliente.id, { method: "DELETE", headers: SH() });
+      onVolver();
+    } catch (e) {
+      alert("No se pudo eliminar: " + e.message);
+    }
+  }
 
   useEffect(() => {
     let cancelado = false;
@@ -1479,21 +1517,53 @@ function DetalleCliente({ cliente, onVolver }) {
       onClick: onVolver,
       style: { background: "none", border: "none", color: "var(--brass)", fontSize: 12.5, fontWeight: 700, cursor: "pointer", padding: 0, marginBottom: 14, display: "flex", alignItems: "center", gap: 4 },
     }, "← Volver a Clientes"),
-    h("div", { className: "hero" },
-      h("div", { className: "hero-row" },
-        h("div", { style: { flex: 1 } },
-          h("div", { className: "hero-title" }, cliente.nombre),
-          h("div", { className: "hero-sub" }, cliente.contacto || "Sin contacto cargado")
+    !editando
+      ? h("div", { className: "hero" },
+          h("div", { className: "hero-row" },
+            h("div", { style: { flex: 1 } },
+              h("div", { className: "hero-title" }, cliente.nombre),
+              h("div", { className: "hero-sub" }, cliente.contacto || "Sin contacto cargado")
+            ),
+            h("span", {
+              style: {
+                fontSize: 10.5, fontWeight: 700, padding: "4px 10px", borderRadius: 20, textTransform: "uppercase",
+                color: cliente.estado === "activo" ? "#3DDC84" : cliente.estado === "pausado" ? "#FFD60A" : "#7A8699",
+                background: cliente.estado === "activo" ? "rgba(61,220,132,.12)" : cliente.estado === "pausado" ? "rgba(255,214,10,.12)" : "rgba(122,134,153,.12)",
+              },
+            }, cliente.estado)
+          ),
+          h("div", { style: { display: "flex", gap: 8, marginTop: 14 } },
+            h("button", {
+              onClick: () => setEditando(true),
+              style: { background: "var(--panel)", border: "1px solid var(--border)", color: "var(--text-dim)", borderRadius: 8, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" },
+            }, "Editar"),
+            h("button", {
+              onClick: eliminarCliente,
+              style: { background: "rgba(255,69,58,.1)", border: "1px solid rgba(255,69,58,.35)", color: "#FF453A", borderRadius: 8, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" },
+            }, "Eliminar")
+          )
+        )
+      : h("div", { className: "gauge", style: { padding: 16, display: "flex", flexDirection: "column", gap: 8 } },
+          h("input", { placeholder: "Nombre", value: form.nombre, onChange: e => setForm({ ...form, nombre: e.target.value }), style: inputStyle }),
+          h("input", { placeholder: "Contacto", value: form.contacto, onChange: e => setForm({ ...form, contacto: e.target.value }), style: inputStyle }),
+          h("select", {
+            value: form.estado, onChange: e => setForm({ ...form, estado: e.target.value }),
+            style: inputStyle,
+          }, h("option", { value: "activo" }, "Activo"), h("option", { value: "pausado" }, "Pausado"), h("option", { value: "inactivo" }, "Inactivo")),
+          h("input", { placeholder: "URL de su Supabase", value: form.supa_url, onChange: e => setForm({ ...form, supa_url: e.target.value }), style: inputStyle }),
+          h("input", { placeholder: "Clave anon/publishable", value: form.supa_anon_key, onChange: e => setForm({ ...form, supa_anon_key: e.target.value }), style: inputStyle }),
+          h("textarea", { placeholder: "Notas", value: form.notas, onChange: e => setForm({ ...form, notas: e.target.value }), rows: 2, style: { ...inputStyle, resize: "vertical" } }),
+          h("div", { style: { display: "flex", gap: 8 } },
+            h("button", {
+              onClick: guardarEdicion, disabled: guardando,
+              style: { flex: 1, background: "var(--brass)", color: "#151109", border: "none", borderRadius: 8, padding: "10px", fontWeight: 700, fontSize: 13, cursor: "pointer", opacity: guardando ? .6 : 1 },
+            }, guardando ? "Guardando…" : "Guardar cambios"),
+            h("button", {
+              onClick: () => setEditando(false),
+              style: { background: "var(--panel)", border: "1px solid var(--border)", color: "var(--text-dim)", borderRadius: 8, padding: "10px 16px", fontWeight: 700, fontSize: 13, cursor: "pointer" },
+            }, "Cancelar")
+          )
         ),
-        h("span", {
-          style: {
-            fontSize: 10.5, fontWeight: 700, padding: "4px 10px", borderRadius: 20, textTransform: "uppercase",
-            color: cliente.estado === "activo" ? "#3DDC84" : cliente.estado === "pausado" ? "#FFD60A" : "#7A8699",
-            background: cliente.estado === "activo" ? "rgba(61,220,132,.12)" : cliente.estado === "pausado" ? "rgba(255,214,10,.12)" : "rgba(122,134,153,.12)",
-          },
-        }, cliente.estado)
-      )
-    ),
     cargando
       ? h("div", { style: { textAlign: "center", color: "var(--text-faint)", fontSize: 13, padding: "40px 0" } }, "Conectando con el sistema de " + cliente.nombre + "…")
       : !datos.instrumentado
@@ -1599,7 +1669,11 @@ function PantallaClientes() {
     setGuardando(false);
   }
 
-  if (seleccionado) return h(DetalleCliente, { cliente: seleccionado, onVolver: () => setSeleccionado(null) });
+  if (seleccionado) return h(DetalleCliente, {
+    cliente: seleccionado,
+    onVolver: () => setSeleccionado(null),
+    onActualizado: (actualizado) => { setSeleccionado(actualizado); cargarClientes(); },
+  });
 
   return h("div", { className: "shell" },
     h("div", { className: "topbar" },
