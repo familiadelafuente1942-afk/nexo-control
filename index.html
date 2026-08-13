@@ -605,6 +605,7 @@ function Dashboard() {
   const [aperturas, setAperturas] = useState({ total: 0, hoy: 0, porVista: { contratista: 0, cliente: 0, constructora: 0, propietario: 0 } });
   const [estadoApps, setEstadoApps] = useState({ contratista: { errores: 0 }, cliente: { errores: 0 }, constructora: { errores: 0 }, propietario: { errores: 0 } });
   const [costoClaude, setCostoClaude] = useState({ mes: null, hoy: null, porApp: [] }); // null = todavía no cargó
+  const [incidentes, setIncidentes] = useState([]);
   const [supaOk, setSupaOk] = useState(null); // null = chequeando, true/false
   const [appOk, setAppOk] = useState(null);
   const [salud, setSalud] = useState({ vercel: null, claude: null, resend: null });
@@ -731,8 +732,31 @@ function Dashboard() {
       // sin datos todavía — el card de costos cae al valor manual como respaldo
     }
 
+    // 7) Incidentes — errores agrupados automáticamente por el trigger de Supabase
+    try {
+      const r = await fetch(
+        SUPA_URL + "/rest/v1/incidentes?select=*&order=ultima_vez.desc&limit=100",
+        { headers: SH() }
+      );
+      const data = await r.json();
+      setIncidentes(Array.isArray(data) ? data : []);
+    } catch (e) {
+      // sin datos todavía — la sección queda vacía
+    }
+
     setUltimaActualizacion(new Date());
     setCargando(false);
+  }, []);
+
+  const marcarResuelto = useCallback(async (id) => {
+    try {
+      await fetch(SUPA_URL + "/rest/v1/incidentes?id=eq." + id, {
+        method: "PATCH",
+        headers: { ...SH(), "Prefer": "return=minimal" },
+        body: JSON.stringify({ estado: "resolved", resuelto_en: new Date().toISOString() }),
+      });
+      setIncidentes(prev => prev.map(inc => inc.id === id ? { ...inc, estado: "resolved" } : inc));
+    } catch (e) {}
   }, []);
 
   useEffect(() => { cargarTodo(); }, [cargarTodo]);
@@ -947,7 +971,39 @@ function Dashboard() {
 
     // Incidentes
     h("div", { className: "section-label" }, "Historial de incidentes"),
-    h("div", { className: "incidents-empty" }, "Sin incidentes registrados todavía."),
+    incidentes.length === 0
+      ? h("div", { className: "incidents-empty" }, "Sin incidentes registrados todavía.")
+      : h("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
+          incidentes.map((inc) => {
+            const abierto = inc.estado !== "resolved";
+            return h("div", {
+              key: inc.id,
+              style: {
+                background: "var(--panel)", border: "1px solid " + (abierto ? "rgba(255,69,58,.35)" : "var(--border)"),
+                borderRadius: 14, padding: "14px 16px", opacity: abierto ? 1 : .55,
+              },
+            },
+              h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 } },
+                h("div", { style: { flex: 1 } },
+                  h("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
+                    h("span", { style: { fontSize: 11, fontWeight: 700, color: abierto ? "#FF453A" : "#34C759" } }, abierto ? "⚠ ABIERTO" : "✓ RESUELTO"),
+                    h("span", { style: { fontSize: 11, color: "var(--text-faint)", textTransform: "uppercase" } }, inc.app)
+                  ),
+                  h("div", { style: { fontSize: 13, color: "var(--text)", marginTop: 4, lineHeight: 1.4 } }, (inc.mensaje || "").slice(0, 140)),
+                  h("div", { style: { fontSize: 11, color: "var(--text-faint)", marginTop: 6 } },
+                    inc.ocurrencias + (inc.ocurrencias === 1 ? " ocurrencia" : " ocurrencias") +
+                    " · primera vez " + new Date(inc.primera_vez).toLocaleString("es-AR") +
+                    " · última vez " + new Date(inc.ultima_vez).toLocaleString("es-AR")
+                  )
+                ),
+                abierto && h("button", {
+                  onClick: () => marcarResuelto(inc.id),
+                  style: { background: "rgba(52,199,89,.12)", color: "#34C759", border: "1px solid rgba(52,199,89,.4)", borderRadius: 8, padding: "6px 12px", fontSize: 11.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" },
+                }, "Marcar resuelto")
+              )
+            );
+          })
+        ),
 
 
     h("div", { className: "footer" }, "NEXO Control · uso interno")
