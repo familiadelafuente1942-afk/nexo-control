@@ -517,6 +517,24 @@ const SH = () => ({ apikey: SUPA_ANON, Authorization: "Bearer " + SUPA_ANON });
 // Claves reales usadas por la app VVCONSTRUCCIONESULTIMO dentro de bco_storage
 const KEYS = ["vv_obras", "vv_personal", "vv_matpedidos", "vv_pedidos", "vv_mensajes", "vv_avance", "vv_certif_sem", "vv_bitacora", "vv_auditoria"];
 
+// Igual que contarRegistrosAgrupados/contarValor, pero solo cuenta los registros
+// cuyo campo "ts" (timestamp real, en milisegundos) cae dentro del día de hoy.
+// Los registros que no tienen "ts" no se cuentan acá (quedan solo en el total).
+function contarHoy(raw, agrupado) {
+  if (!raw) return 0;
+  try {
+    const v = JSON.parse(raw);
+    const inicioHoy = new Date(); inicioHoy.setHours(0, 0, 0, 0);
+    const inicioMs = inicioHoy.getTime();
+    let items = [];
+    if (Array.isArray(v)) items = v;
+    else if (v && typeof v === "object" && agrupado) items = Object.values(v).flatMap(x => Array.isArray(x) ? x : []);
+    return items.filter(it => it && typeof it.ts === "number" && it.ts >= inicioMs).length;
+  } catch (e) {
+    return 0;
+  }
+}
+
 function contarValor(raw) {
   if (!raw) return 0;
   try {
@@ -602,10 +620,12 @@ function Gate({ onUnlock }) {
 function Dashboard() {
   const [cargando, setCargando] = useState(true);
   const [actividad, setActividad] = useState({ obras: 0, personal: 0, matpedidos: 0, pedidos: 0, mensajes: 0, avance: 0, certificados: 0, bitacora: 0, auditoria: 0 });
+  const [actividadHoy, setActividadHoy] = useState({ matpedidos: 0, pedidos: 0, mensajes: 0, avance: 0, certificados: 0, bitacora: 0, auditoria: 0 });
   const [aperturas, setAperturas] = useState({ total: 0, hoy: 0, porVista: { contratista: 0, cliente: 0, constructora: 0, propietario: 0 } });
   const [estadoApps, setEstadoApps] = useState({ contratista: { errores: 0 }, cliente: { errores: 0 }, constructora: { errores: 0 }, propietario: { errores: 0 } });
   const [costoClaude, setCostoClaude] = useState({ mes: null, hoy: null, porApp: [] }); // null = todavía no cargó
   const [incidentes, setIncidentes] = useState([]);
+  const [uptime, setUptime] = useState(null); // null = cargando; luego { pct, chequeos }
   const [supaOk, setSupaOk] = useState(null); // null = chequeando, true/false
   const [appOk, setAppOk] = useState(null);
   const [salud, setSalud] = useState({ vercel: null, claude: null, resend: null });
@@ -656,6 +676,16 @@ function Dashboard() {
         certificados: contarRegistrosAgrupados(mapa["vv_certif_sem"]),
         bitacora: contarValor(mapa["vv_bitacora"]),
         auditoria: contarValor(mapa["vv_auditoria"]),
+      });
+
+      setActividadHoy({
+        matpedidos: contarHoy(mapa["vv_matpedidos"], false),
+        pedidos: contarHoy(mapa["vv_pedidos"], false),
+        mensajes: contarHoy(mapa["vv_mensajes"], false),
+        avance: contarHoy(mapa["vv_avance"], true),
+        certificados: contarHoy(mapa["vv_certif_sem"], true),
+        bitacora: contarHoy(mapa["vv_bitacora"], false),
+        auditoria: contarHoy(mapa["vv_auditoria"], false),
       });
     } catch (e) {
       // si falla, dejamos los números en 0 — el estado de Supabase ya lo refleja arriba
@@ -742,6 +772,24 @@ function Dashboard() {
       setIncidentes(Array.isArray(data) ? data : []);
     } catch (e) {
       // sin datos todavía — la sección queda vacía
+    }
+
+    // 8) Uptime real, calculado sobre los chequeos automáticos de las últimas 24hs
+    try {
+      const desde = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const r = await fetch(
+        SUPA_URL + "/rest/v1/system_health?creado_en=gte." + encodeURIComponent(desde) + "&select=vercel_ok,claude_ok,resend_ok,supabase_ok&limit=500",
+        { headers: SH() }
+      );
+      const filas = await r.json();
+      if (Array.isArray(filas) && filas.length > 0) {
+        const ok = filas.filter(f => f.vercel_ok && f.claude_ok && f.resend_ok && f.supabase_ok).length;
+        setUptime({ pct: (ok / filas.length) * 100, chequeos: filas.length });
+      } else {
+        setUptime({ pct: null, chequeos: 0 });
+      }
+    } catch (e) {
+      setUptime({ pct: null, chequeos: 0 });
     }
 
     setUltimaActualizacion(new Date());
@@ -891,6 +939,26 @@ function Dashboard() {
           !ok && e.ultimo && h("div", { style: { fontSize: 10.5, color: "#9AA5B1", marginTop: 4, lineHeight: 1.4 } }, e.ultimo.slice(0, 90))
         );
       })
+    ),
+
+    // Actividad de HOY — para que no se pierda en un total que solo crece.
+    // Si todo está en 0 acá, hoy no hubo movimiento (aunque el total histórico sea alto).
+    h("div", { className: "section-label" }, "Actividad de hoy"),
+    h("div", { className: "gauge-grid" },
+      [
+        { label: "Pedidos de materiales", val: actividadHoy.matpedidos },
+        { label: "Pedidos generales", val: actividadHoy.pedidos },
+        { label: "Mensajes / fotos", val: actividadHoy.mensajes },
+        { label: "Registros de avance", val: actividadHoy.avance },
+        { label: "Certificados semanales", val: actividadHoy.certificados },
+        { label: "Bitácoras cargadas", val: actividadHoy.bitacora },
+        { label: "Auditorías", val: actividadHoy.auditoria },
+      ].map((g, i) =>
+        h("div", { className: "gauge", key: i },
+          h("div", { className: "gauge-label" }, g.label),
+          h("div", { className: "gauge-num" + (g.val === 0 ? " zero" : "") }, g.val)
+        )
+      )
     ),
 
     // Actividad
