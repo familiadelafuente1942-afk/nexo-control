@@ -787,6 +787,18 @@ function GaugeSenal({ score, size }) {
   );
 }
 
+// Aviso visible cuando una sección no pudo consultar sus datos de verdad —
+// para no confundir "no hay actividad" con "no se pudo consultar".
+function BadgeFalla() {
+  return h("span", {
+    style: {
+      fontSize: 9.5, fontWeight: 700, letterSpacing: .3, padding: "3px 8px", borderRadius: 6,
+      color: "#FF453A", background: "rgba(255,69,58,.12)", border: "1px solid rgba(255,69,58,.35)",
+      marginLeft: 8, whiteSpace: "nowrap",
+    },
+  }, "⚠ NO SE PUDO CONSULTAR");
+}
+
 function Dashboard() {
   const [cargando, setCargando] = useState(true);
   const [actividad, setActividad] = useState({ obras: 0, personal: 0, matpedidos: 0, pedidos: 0, mensajes: 0, avance: 0, certificados: 0, bitacora: 0, auditoria: 0 });
@@ -802,6 +814,7 @@ function Dashboard() {
   const [salud, setSalud] = useState({ vercel: null, claude: null, resend: null });
   const [ultimaActualizacion, setUltimaActualizacion] = useState(null);
   const [chipAbierto, setChipAbierto] = useState(null);
+  const [fallas, setFallas] = useState({ actividad: false, aperturas: false, apps: false, costo: false, incidentes: false, uptime: false, alertas: false });
 
   const cargarTodo = useCallback(async () => {
     setCargando(true);
@@ -828,11 +841,11 @@ function Dashboard() {
 
     // 3) Traer los datos de actividad desde bco_storage
     try {
-      const filtro = KEYS.map(k => `"${k}"`).join(",");
       const r = await fetch(
         SUPA_URL + "/rest/v1/bco_storage?key=in.(" + KEYS.join(",") + ")&select=key,value",
         { headers: SH() }
       );
+      if (!r.ok) throw new Error("HTTP " + r.status);
       const filas = await r.json();
       const mapa = {};
       (filas || []).forEach(f => { mapa[f.key] = f.value; });
@@ -858,8 +871,11 @@ function Dashboard() {
         bitacora: contarHoy(mapa["vv_bitacora"], false),
         auditoria: contarHoy(mapa["vv_auditoria"], false),
       });
+      setFallas(f => ({ ...f, actividad: false }));
     } catch (e) {
-      // si falla, dejamos los números en 0 — el estado de Supabase ya lo refleja arriba
+      // No mostramos los números viejos como si fueran de ahora — se marca la falla
+      // y la sección avisa en vez de mentir con un 0 o un número desactualizado.
+      setFallas(f => ({ ...f, actividad: true }));
     }
 
     // 4) Aperturas de app — tabla liviana propia (no bco_storage). El total y "hoy"
@@ -874,6 +890,7 @@ function Dashboard() {
         fetch(SUPA_URL + "/rest/v1/aperturas?select=id&creado_en=gte." + encodeURIComponent(inicioHoyISO), { headers: { ...SH(), Prefer: "count=exact", Range: "0-0" } }),
         fetch(SUPA_URL + "/rest/v1/aperturas?select=app,creado_en&creado_en=gte." + encodeURIComponent(desde30ISO) + "&limit=20000", { headers: SH() }),
       ]);
+      if (!rTotal.ok || !rHoy.ok || !rVentana.ok) throw new Error("HTTP " + rTotal.status + "/" + rHoy.status + "/" + rVentana.status);
 
       const totalDesdeRango = (r) => {
         const cr = r.headers.get("content-range"); // formato "0-0/1234"
@@ -895,8 +912,9 @@ function Dashboard() {
       });
 
       setAperturas({ total, hoy, porVista, porHora });
+      setFallas(f => ({ ...f, aperturas: false }));
     } catch (e) {
-      // sin datos de apertura todavía — queda en 0
+      setFallas(f => ({ ...f, aperturas: true }));
     }
 
     // 5) Traer errores reales reportados por las 4 apps (últimas 24hs)
@@ -906,6 +924,7 @@ function Dashboard() {
         SUPA_URL + "/rest/v1/app_errores?creado_en=gte." + encodeURIComponent(desde) + "&select=app,mensaje,creado_en&order=creado_en.desc&limit=500",
         { headers: SH() }
       );
+      if (!r.ok) throw new Error("HTTP " + r.status);
       const filas = await r.json();
       const estado = { contratista: { errores: 0 }, cliente: { errores: 0 }, constructora: { errores: 0 }, propietario: { errores: 0 } };
       (filas || []).forEach(f => {
@@ -915,8 +934,9 @@ function Dashboard() {
         }
       });
       setEstadoApps(estado);
+      setFallas(f => ({ ...f, apps: false }));
     } catch (e) {
-      // sin datos de errores todavía — se asume OK
+      setFallas(f => ({ ...f, apps: true }));
     }
 
     // 6) Costo real de Claude API — leído directo de ai_usage (tokens × precio real de cada llamada)
@@ -928,6 +948,7 @@ function Dashboard() {
         SUPA_URL + "/rest/v1/ai_usage?creado_en=gte." + encodeURIComponent(inicioMes) + "&select=app,costo_usd,creado_en&limit=10000",
         { headers: SH() }
       );
+      if (!r.ok) throw new Error("HTTP " + r.status);
       const filas = await r.json();
       let mes = 0, hoy = 0;
       const porAppMapa = {};
@@ -950,8 +971,11 @@ function Dashboard() {
         ultimos7.push({ dia: clave, etiqueta: d.toLocaleDateString("es-AR", { weekday: "short" }), monto: porDiaMapa[clave] || 0 });
       }
       setCostoClaude({ mes, hoy, porApp, ultimos7 });
+      setFallas(f => ({ ...f, costo: false }));
     } catch (e) {
-      // sin datos todavía — el card de costos cae al valor manual como respaldo
+      // Si falla, NO tocamos costoClaude — así el panel sigue mostrando el último
+      // valor real conocido en vez de saltar a $0, y la falla queda marcada aparte.
+      setFallas(f => ({ ...f, costo: true }));
     }
 
     // 7) Incidentes — errores agrupados automáticamente por el trigger de Supabase
@@ -960,10 +984,12 @@ function Dashboard() {
         SUPA_URL + "/rest/v1/incidentes?select=*&order=ultima_vez.desc&limit=100",
         { headers: SH() }
       );
+      if (!r.ok) throw new Error("HTTP " + r.status);
       const data = await r.json();
       setIncidentes(Array.isArray(data) ? data : []);
+      setFallas(f => ({ ...f, incidentes: false }));
     } catch (e) {
-      // sin datos todavía — la sección queda vacía
+      setFallas(f => ({ ...f, incidentes: true }));
     }
 
     // 8) Uptime real + historial de latencia (últimos chequeos automáticos, cada 10 min)
@@ -974,6 +1000,7 @@ function Dashboard() {
           "&select=vercel_ok,claude_ok,resend_ok,supabase_ok,vercel_ms,claude_ms,resend_ms,supabase_ms,creado_en&order=creado_en.asc&limit=500",
         { headers: SH() }
       );
+      if (!r.ok) throw new Error("HTTP " + r.status);
       const filas = await r.json();
       if (Array.isArray(filas) && filas.length > 0) {
         const ok = filas.filter(f => f.vercel_ok && f.claude_ok && f.resend_ok && f.supabase_ok).length;
@@ -998,8 +1025,9 @@ function Dashboard() {
       } else {
         setUptime({ pct: null, chequeos: 0, historial: [], senal: null });
       }
+      setFallas(f => ({ ...f, uptime: false }));
     } catch (e) {
-      setUptime({ pct: null, chequeos: 0, historial: [], senal: null });
+      setFallas(f => ({ ...f, uptime: true }));
     }
 
     // 9) Alertas activas — abiertas y cerradas solas por el cron, según las reglas configuradas
@@ -1008,10 +1036,12 @@ function Dashboard() {
         SUPA_URL + "/rest/v1/alertas?estado=eq.open&select=*&order=nivel.asc,actualizado_en.desc&limit=50",
         { headers: SH() }
       );
+      if (!r.ok) throw new Error("HTTP " + r.status);
       const data = await r.json();
       setAlertas(Array.isArray(data) ? data : []);
+      setFallas(f => ({ ...f, alertas: false }));
     } catch (e) {
-      // sin datos todavía — se asume sin alertas
+      setFallas(f => ({ ...f, alertas: true }));
     }
 
     setUltimaActualizacion(new Date());
@@ -1143,7 +1173,7 @@ function Dashboard() {
     ),
 
     // Estado de las apps — vigía en vivo, avisa sin que nadie tenga que llamar
-    h("div", { className: "section-label" }, "Estado de las apps"),
+    h("div", { className: "section-label", style: fallas.apps ? { color: "#FF453A" } : {} }, "Estado de las apps", fallas.apps && h(BadgeFalla)),
     h("div", { className: "gauge-grid" },
       [
         { label: "App Contratista", tag: "contratista" },
@@ -1164,8 +1194,8 @@ function Dashboard() {
     ),
 
     // Alertas activas — lo más urgente va primero, arriba de todo lo demás
-    alertas.length > 0 && h("div", null,
-      h("div", { className: "section-label" }, "Alertas activas"),
+    (alertas.length > 0 || fallas.alertas) && h("div", null,
+      h("div", { className: "section-label" }, "Alertas activas", fallas.alertas && h(BadgeFalla)),
       h("div", { style: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 8 } },
         alertas.map((a) => {
           const critica = a.nivel === "critical";
@@ -1189,7 +1219,7 @@ function Dashboard() {
 
     // Actividad de HOY — para que no se pierda en un total que solo crece.
     // Si todo está en 0 acá, hoy no hubo movimiento (aunque el total histórico sea alto).
-    h("div", { className: "section-label" }, "Actividad de hoy"),
+    h("div", { className: "section-label" }, "Actividad de hoy", fallas.actividad && h(BadgeFalla)),
     h("div", { className: "gauge-grid" },
       [
         { label: "Pedidos de materiales", val: actividadHoy.matpedidos },
@@ -1208,7 +1238,7 @@ function Dashboard() {
     ),
 
     // Actividad
-    h("div", { className: "section-label" }, "Actividad del sistema"),
+    h("div", { className: "section-label" }, "Actividad del sistema", fallas.actividad && h(BadgeFalla)),
     h("div", { className: "gauge-grid" },
       [
         { label: "Obras activas", val: actividad.obras },
@@ -1229,7 +1259,7 @@ function Dashboard() {
     ),
 
     // Uso de la app — dona por vista + reloj de actividad, más entretenido que números sueltos
-    h("div", { className: "section-label" }, "Uso de la app"),
+    h("div", { className: "section-label" }, "Uso de la app", (fallas.aperturas || fallas.uptime) && h(BadgeFalla)),
     h("div", { className: "gauge-grid" },
       [
         { label: "Aperturas totales", val: aperturas.total },
@@ -1277,7 +1307,7 @@ function Dashboard() {
     ),
 
     // Costos
-    h("div", { className: "section-label" }, "Costo de infraestructura"),
+    h("div", { className: "section-label" }, "Costo de infraestructura", fallas.costo && h(BadgeFalla)),
     h("div", { className: "cost-card" },
       costos.map((c, i) =>
         h("div", { className: "cost-row", key: i },
@@ -1318,7 +1348,7 @@ function Dashboard() {
     ),
 
     // Incidentes
-    h("div", { className: "section-label" }, "Historial de incidentes"),
+    h("div", { className: "section-label" }, "Historial de incidentes", fallas.incidentes && h(BadgeFalla)),
     incidentes.length === 0
       ? h("div", { className: "incidents-empty" }, "Sin incidentes registrados todavía.")
       : h("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
