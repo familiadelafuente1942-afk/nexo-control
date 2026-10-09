@@ -4,44 +4,40 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
 <title>NEXO Control</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg: #0B0E14;
-    --panel: #12161F;
-    --panel-2: #161B26;
-    --border: #232838;
-    --text: #E7E9EE;
-    --text-dim: #838B9E;
-    --text-faint: #4B5266;
-    --green: #3DDC84;
-    --amber: #F5A623;
-    --red: #FF5C5C;
-    --brass: #B0894F;
+    --bg: #0b0b0d;
+    --panel: #1c1c1e;
+    --panel-2: #2c2c2e;
+    --border: #2c2c2e;
+    --text: #f2f2f7;
+    --text-dim: #8e8e93;
+    --text-faint: #636366;
+    --green: #6bb48a;
+    --amber: #c9a55c;
+    --red: #d1645a;
+    --brass: #b8996a;
   }
   *{ box-sizing: border-box; }
   html,body{ margin:0; padding:0; background:var(--bg); }
   body{
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', system-ui, sans-serif;
     color: var(--text);
     -webkit-font-smoothing: antialiased;
   }
-  .mono{ font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .mono{ font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
   #root{ min-height:100vh; }
 
   /* ---- Gate ---- */
   .gate{
     min-height:100vh; display:flex; align-items:center; justify-content:center;
     background:
-      radial-gradient(circle at 20% 20%, rgba(176,137,79,0.06), transparent 40%),
-      radial-gradient(circle at 80% 80%, rgba(61,220,132,0.05), transparent 40%),
       var(--bg);
     padding:24px;
   }
   .gate-box{
     width:100%; max-width:360px; background:var(--panel);
-    border:1px solid var(--border); border-radius:14px; padding:32px 28px;
+    border:1px solid var(--border); border-radius:20px; padding:32px 28px;
   }
   .gate-eyebrow{
     font-size:11px; letter-spacing:.14em; text-transform:uppercase;
@@ -52,7 +48,7 @@
   .gate-input{
     width:100%; background:var(--bg); border:1.5px solid var(--border);
     border-radius:9px; padding:13px 14px; color:var(--text); font-size:15px;
-    font-family:'JetBrains Mono', monospace; letter-spacing:.05em;
+    font-family:ui-monospace, 'SF Mono', Menlo, monospace; letter-spacing:.05em;
   }
   .gate-input:focus{ outline:none; border-color:var(--brass); }
   .gate-btn{
@@ -74,8 +70,7 @@
     width:34px; height:34px; border-radius:8px; background:var(--panel);
     border:1px solid var(--border); display:flex; align-items:center; justify-content:center;
   }
-  .brand-mark span{ width:8px; height:8px; border-radius:50%; background:var(--green);
-    box-shadow: 0 0 8px var(--green); }
+  .brand-mark span{ width:8px; height:8px; border-radius:50%; background:var(--green); }
   .brand-name{ font-weight:800; font-size:16px; letter-spacing:-0.01em; }
   .brand-sub{ font-size:11px; color:var(--text-faint); letter-spacing:.06em; text-transform:uppercase; }
   .refresh-info{ font-size:11.5px; color:var(--text-faint); }
@@ -89,20 +84,16 @@
 
   /* ---- Hero status ---- */
   .hero{
-    border-radius:14px; border:1px solid var(--border); background:var(--panel);
+    border-radius:20px; border:1px solid var(--border); background:var(--panel);
     padding:16px 18px; margin-bottom:14px; position:relative; overflow:hidden;
-  }
-  .hero::before{
-    content:''; position:absolute; inset:0; opacity:.5; pointer-events:none;
-    background: radial-gradient(600px 200px at 15% 0%, rgba(61,220,132,0.07), transparent 60%);
   }
   .hero-row{ display:flex; align-items:center; gap:12px; position:relative; }
   .hero-dot{
     width:11px; height:11px; border-radius:50%; flex-shrink:0;
   }
-  .hero-dot.g{ background:var(--green); box-shadow:0 0 12px var(--green); }
-  .hero-dot.y{ background:var(--amber); box-shadow:0 0 12px var(--amber); }
-  .hero-dot.r{ background:var(--red); box-shadow:0 0 12px var(--red); }
+  .hero-dot.g{ background:var(--green); }
+  .hero-dot.y{ background:var(--amber); }
+  .hero-dot.r{ background:var(--red); }
   .hero-title{ font-size:16px; font-weight:800; letter-spacing:-0.01em; }
   .hero-sub{ font-size:11.5px; color:var(--text-dim); margin-top:1px; }
   .hero-stats{
@@ -112,7 +103,7 @@
   }
   .hero-stat{ padding:0 12px; border-left:1px solid var(--border); }
   .hero-stat:first-child{ border-left:none; padding-left:0; }
-  .hero-stat-num{ font-size:17px; font-weight:700; font-family:'JetBrains Mono', monospace; }
+  .hero-stat-num{ font-size:17px; font-weight:700; font-family:ui-monospace, 'SF Mono', Menlo, monospace; }
   .hero-stat-label{ font-size:9.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.06em; margin-top:2px; }
 
   /* ---- Section label ---- */
@@ -125,40 +116,34 @@
   /* ---- Chip row (systems) ---- */
   .chip-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; }
   .chip{
-    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    background:var(--panel); border:1px solid var(--border); border-radius:16px;
     padding:11px 12px; cursor:pointer; transition:border-color .15s;
   }
   .chip:hover{ border-color:var(--text-faint); }
   .chip-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
   .chip-name{ font-size:12px; font-weight:700; }
   .chip-led{ width:8px; height:8px; border-radius:50%; }
-  .chip-led.g{ background:var(--green); box-shadow:0 0 8px var(--green); }
-  .chip-led.y{ background:var(--amber); box-shadow:0 0 8px var(--amber); }
-  .chip-led.r{ background:var(--red); box-shadow:0 0 8px var(--red); }
-  .chip-detail{ font-size:10.5px; color:var(--text-dim); font-family:'JetBrains Mono', monospace; }
+  .chip-led.g{ background:var(--green); }
+  .chip-led.y{ background:var(--amber); }
+  .chip-led.r{ background:var(--red); }
+  .chip-detail{ font-size:10.5px; color:var(--text-dim); font-family:ui-monospace, 'SF Mono', Menlo, monospace; }
   .chip-expand{ margin-top:8px; padding-top:8px; border-top:1px solid var(--border); font-size:10.5px; color:var(--text-faint); line-height:1.5; display:none; }
   .chip.open .chip-expand{ display:block; }
 
   /* ---- Gauge cards (activity) ---- */
   .gauge-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(108px,1fr)); gap:8px; }
   .gauge{
-    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    background:var(--panel); border:1px solid var(--border); border-radius:16px;
     padding:11px 12px; position:relative;
   }
-  .gauge::before, .gauge::after{
-    content:''; position:absolute; width:4px; height:4px; border:1px solid var(--text-faint);
-    border-radius:1px; opacity:.4;
-  }
-  .gauge::before{ top:6px; left:6px; }
-  .gauge::after{ bottom:6px; right:6px; }
   .gauge-label{ font-size:9.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.06em; margin-bottom:5px; }
-  .gauge-num{ font-size:19px; font-weight:700; font-family:'JetBrains Mono', monospace; line-height:1; }
+  .gauge-num{ font-size:19px; font-weight:700; font-family:ui-monospace, 'SF Mono', Menlo, monospace; line-height:1; }
   .gauge-num.zero{ color: var(--text-faint); }
   .gauge-foot{ font-size:10px; color:var(--text-dim); margin-top:4px; }
 
   /* ---- Costs ---- */
   .cost-card{
-    background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:14px 16px;
+    background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:14px 16px;
   }
   .cost-row{
     display:flex; align-items:center; justify-content:space-between;
@@ -167,18 +152,18 @@
   .cost-row:last-of-type{ border-bottom:none; }
   .cost-name{ font-size:12.5px; font-weight:600; }
   .cost-tag{ font-size:9.5px; color:var(--text-faint); margin-top:1px; }
-  .cost-amount{ font-size:14px; font-weight:700; font-family:'JetBrains Mono', monospace; }
+  .cost-amount{ font-size:14px; font-weight:700; font-family:ui-monospace, 'SF Mono', Menlo, monospace; }
   .cost-total{
     display:flex; align-items:center; justify-content:space-between;
     margin-top:10px; padding-top:11px; border-top:1.5px solid var(--brass);
   }
   .cost-total-label{ font-size:11.5px; font-weight:700; color:var(--brass); text-transform:uppercase; letter-spacing:.05em; }
-  .cost-total-amount{ font-size:18px; font-weight:800; font-family:'JetBrains Mono', monospace; color:var(--brass); }
+  .cost-total-amount{ font-size:18px; font-weight:800; font-family:ui-monospace, 'SF Mono', Menlo, monospace; color:var(--brass); }
   .cost-note{ font-size:10.5px; color:var(--text-faint); margin-top:10px; line-height:1.5; }
 
   /* ---- Incidents ---- */
   .incidents-empty{
-    background:var(--panel); border:1px dashed var(--border); border-radius:12px;
+    background:var(--panel); border:1px dashed var(--border); border-radius:16px;
     padding:20px 16px; text-align:center; color:var(--text-faint); font-size:12px;
   }
 
@@ -194,6 +179,15 @@
     0%, 100%{ opacity:1; transform:scale(1); }
     50%{ opacity:.4; transform:scale(1.3); }
   }
+
+  /* ---- Instrumentos (relojes) ---- */
+  .dial-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px; }
+  .dial-card{
+    background:var(--panel); border:1px solid var(--border); border-radius:20px;
+    padding:14px 10px 12px; display:flex; flex-direction:column; align-items:center; gap:2px;
+  }
+  .dial-card .gauge-label{ align-self:center; margin-bottom:0; }
+  .dial-sub{ font-size:10.5px; color:var(--text-dim); font-family: ui-monospace, 'SF Mono', Menlo, monospace; text-align:center; }
 </style>
 </head>
 <body>
@@ -521,6 +515,14 @@ const HEALTH_URL = "https://bxhjgxzvayszfqwlwinq.supabase.co/functions/v1/hyper-
 const SH = () => ({ "Content-Type": "application/json", apikey: SUPA_ANON, Authorization: "Bearer " + SUPA_ANON });
 
 // Claves reales usadas por la app VVCONSTRUCCIONESULTIMO dentro de bco_storage
+const hace = (iso) => {
+  const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (isNaN(m)) return "—";
+  if (m < 1) return "ahora";
+  if (m < 60) return "hace " + m + " min";
+  if (m < 1440) return "hace " + Math.floor(m / 60) + " h";
+  return "hace " + Math.floor(m / 1440) + " d";
+};
 const KEYS = ["vv_obras", "vv_personal", "vv_matpedidos", "vv_pedidos", "vv_mensajes", "vv_avance", "vv_certif_sem", "vv_bitacora", "vv_auditoria"];
 
 // Igual que contarRegistrosAgrupados/contarValor, pero solo cuenta los registros
@@ -649,7 +651,7 @@ function DonutConLeyenda({ data, size }) {
       !segmentos
         ? h("circle", { cx, cy, r, fill: "none", stroke: "var(--border)", strokeWidth: 15 })
         : h("g", { transform: `rotate(-90 ${cx} ${cy})` }, segmentos),
-      h("text", { x: cx, y: cy - 3, textAnchor: "middle", fontSize: 20, fontWeight: 700, fill: "var(--text)", fontFamily: "'JetBrains Mono', monospace" }, total),
+      h("text", { x: cx, y: cy - 3, textAnchor: "middle", fontSize: 20, fontWeight: 700, fill: "var(--text)", fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace" }, total),
       h("text", { x: cx, y: cy + 13, textAnchor: "middle", fontSize: 8.5, fill: "var(--text-faint)", letterSpacing: ".05em" }, "TOTAL")
     ),
     h("div", { style: { display: "flex", flexDirection: "column", gap: 6, flex: 1, minWidth: 110 } },
@@ -657,7 +659,7 @@ function DonutConLeyenda({ data, size }) {
         h("div", { key: i, style: { display: "flex", alignItems: "center", gap: 7, fontSize: 11.5 } },
           h("span", { style: { width: 9, height: 9, borderRadius: 3, background: d.color, flexShrink: 0 } }),
           h("span", { style: { color: "var(--text-dim)", flex: 1 } }, d.label),
-          h("span", { style: { color: "var(--text)", fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" } }, d.value)
+          h("span", { style: { color: "var(--text)", fontWeight: 700, fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace" } }, d.value)
         )
       )
     )
@@ -681,7 +683,7 @@ function RelojActividad({ porHora, size }) {
       key: hora,
       x1: cx + rInner * Math.cos(rad), y1: cy + rInner * Math.sin(rad),
       x2: cx + largo * Math.cos(rad), y2: cy + largo * Math.sin(rad),
-      stroke: esPico ? "#3DDC84" : "rgba(176,137,79,.5)",
+      stroke: esPico ? "#6bb48a" : "rgba(169,140,92,.5)",
       strokeWidth: esPico ? 3 : 2, strokeLinecap: "round",
     }));
   }
@@ -702,7 +704,7 @@ function RelojActividad({ porHora, size }) {
       marcas, etiquetas
     ),
     h("div", { style: { fontSize: 11.5, color: "var(--text-dim)", marginTop: 6 } },
-      picoHora === null ? "Sin datos todavía" : ["Pico de uso: ", h("span", { key: "p", style: { color: "#3DDC84", fontWeight: 700 } }, String(picoHora).padStart(2, "0") + ":00hs")]
+      picoHora === null ? "Sin datos todavía" : ["Pico de uso: ", h("span", { key: "p", style: { color: "#6bb48a", fontWeight: 700 } }, String(picoHora).padStart(2, "0") + ":00hs")]
     )
   );
 }
@@ -720,7 +722,7 @@ function BarrasCosto7Dias({ data, width }) {
       const y = alto - bh;
       const esHoy = i === data.length - 1;
       return h("g", { key: i },
-        h("rect", { x, y, width: anchoBarra, height: Math.max(bh, 1.5), rx: 3, fill: esHoy ? "#B0894F" : "rgba(176,137,79,.4)" }),
+        h("rect", { x, y, width: anchoBarra, height: Math.max(bh, 1.5), rx: 3, fill: esHoy ? "#a98c5c" : "rgba(169,140,92,.4)" }),
         h("text", { x: x + anchoBarra / 2, y: alto + 14, textAnchor: "middle", fontSize: 9, fill: "var(--text-faint)" }, d.etiqueta)
       );
     })
@@ -746,9 +748,9 @@ function SparklineLatencia({ historial, width }) {
   const ultimo = historial[historial.length - 1];
   const ultimoX = width;
   const ultimoY = alto - ((ultimo.ms - min) / rango) * alto * 0.8 - alto * 0.08;
-  const color = ultimo.ok ? "#3DDC84" : "#FF453A";
+  const color = ultimo.ok ? "#6bb48a" : "#d1645a";
   return h("svg", { width: "100%", height: alto, viewBox: `0 0 ${width} ${alto}`, preserveAspectRatio: "none" },
-    h("polyline", { points: puntos, fill: "none", stroke: color, strokeWidth: 2, strokeLinejoin: "round", strokeLinecap: "round", style: { filter: "drop-shadow(0 0 4px " + color + ")" } }),
+    h("polyline", { points: puntos, fill: "none", stroke: color, strokeWidth: 2, strokeLinejoin: "round", strokeLinecap: "round" }),
     h("circle", { cx: ultimoX, cy: ultimoY, r: 3.5, fill: color }),
     h("circle", { cx: ultimoX, cy: ultimoY, r: 7, fill: "none", stroke: color, strokeWidth: 1.5, opacity: .5 })
   );
@@ -772,18 +774,39 @@ function GaugeSenal({ score, size }) {
   }
   const s = Math.max(0, Math.min(100, score));
   const punta = punto(s);
-  const color = s >= 75 ? "#3DDC84" : s >= 40 ? "#FFD60A" : "#FF453A";
+  const color = s >= 75 ? "#6bb48a" : s >= 40 ? "#c9a55c" : "#d1645a";
   const etiqueta = s >= 75 ? "Excelente" : s >= 40 ? "Inestable" : "Con problemas";
   return h("div", { style: { display: "flex", flexDirection: "column", alignItems: "center" } },
     h("svg", { width: size, height: size * 0.62, viewBox: "0 0 " + size + " " + (size * 0.62) },
-      arco(0, 40, "rgba(255,69,58,.3)"),
-      arco(40, 75, "rgba(255,214,10,.3)"),
-      arco(75, 100, "rgba(61,220,132,.3)"),
+      arco(0, 40, "rgba(209,100,90,.3)"),
+      arco(40, 75, "rgba(201,165,92,.3)"),
+      arco(75, 100, "rgba(107,180,138,.3)"),
       h("line", { x1: cx, y1: cy, x2: punta.x, y2: punta.y, stroke: color, strokeWidth: 3, strokeLinecap: "round" }),
       h("circle", { cx, cy, r: 4.5, fill: color })
     ),
-    h("div", { style: { fontSize: 17, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color, marginTop: -4 } }, Math.round(s) + "%"),
+    h("div", { style: { fontSize: 17, fontWeight: 800, fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace", color, marginTop: -4 } }, Math.round(s) + "%"),
     h("div", { style: { fontSize: 10.5, color: "var(--text-dim)" } }, etiqueta)
+  );
+}
+
+// Reloj con aguja (270°) — estilo instrumento, colores suaves
+function Dial({ titulo, valor, max, color, texto, pie, sub }) {
+  const R = 78, CIRC = 2 * Math.PI * R, ARCO = CIRC * 0.75;
+  const hayDato = valor !== null && valor !== undefined && !isNaN(valor);
+  const f = hayDato ? Math.max(0, Math.min(1, valor / max)) : 0;
+  const ang = -135 + f * 270;
+  return h("div", { className: "dial-card" },
+    h("div", { className: "gauge-label" }, titulo),
+    h("svg", { viewBox: "0 0 200 200", role: "img", "aria-label": titulo + ": " + (hayDato ? texto : "sin datos"), style: { width: "100%", maxWidth: 200, height: "auto" } },
+      h("circle", { cx: 100, cy: 100, r: 92, fill: "none", stroke: "#3a3a3c", strokeWidth: 3, strokeDasharray: "2 " + ((ARCO * 92 / R - 54) / 27).toFixed(2), transform: "rotate(135 100 100)" }),
+      h("circle", { cx: 100, cy: 100, r: R, fill: "none", stroke: "#2c2c2e", strokeWidth: 12, strokeLinecap: "round", strokeDasharray: ARCO.toFixed(1) + " " + CIRC.toFixed(1), transform: "rotate(135 100 100)" }),
+      hayDato && f > 0 && h("circle", { cx: 100, cy: 100, r: R, fill: "none", stroke: color, strokeWidth: 12, strokeLinecap: "round", strokeDasharray: (ARCO * f).toFixed(1) + " " + CIRC.toFixed(1), transform: "rotate(135 100 100)" }),
+      hayDato && h("line", { x1: 100, y1: 100, x2: 100, y2: 44, stroke: "#f2f2f7", strokeWidth: 3, strokeLinecap: "round", transform: "rotate(" + ang.toFixed(1) + " 100 100)" }),
+      h("circle", { cx: 100, cy: 100, r: 9, fill: "#1c1c1e", stroke: "#b8996a", strokeWidth: 3 }),
+      h("text", { x: 100, y: 152, textAnchor: "middle", fontFamily: "ui-monospace, Menlo, monospace", fontSize: 26, fontWeight: 600, fill: hayDato ? color : "#636366" }, hayDato ? texto : "—"),
+      h("text", { x: 100, y: 170, textAnchor: "middle", fontFamily: "-apple-system, Helvetica Neue, sans-serif", fontSize: 11, fill: "#8e8e93" }, pie || "")
+    ),
+    sub && h("div", { className: "dial-sub" }, sub)
   );
 }
 
@@ -793,7 +816,7 @@ function BadgeFalla() {
   return h("span", {
     style: {
       fontSize: 9.5, fontWeight: 700, letterSpacing: .3, padding: "3px 8px", borderRadius: 6,
-      color: "#FF453A", background: "rgba(255,69,58,.12)", border: "1px solid rgba(255,69,58,.35)",
+      color: "#d1645a", background: "rgba(209,100,90,.12)", border: "1px solid rgba(209,100,90,.35)",
       marginLeft: 8, whiteSpace: "nowrap",
     },
   }, "⚠ NO SE PUDO CONSULTAR");
@@ -803,7 +826,7 @@ function Dashboard() {
   const [cargando, setCargando] = useState(true);
   const [actividad, setActividad] = useState({ obras: 0, personal: 0, matpedidos: 0, pedidos: 0, mensajes: 0, avance: 0, certificados: 0, bitacora: 0, auditoria: 0 });
   const [actividadHoy, setActividadHoy] = useState({ matpedidos: 0, pedidos: 0, mensajes: 0, avance: 0, certificados: 0, bitacora: 0, auditoria: 0 });
-  const [aperturas, setAperturas] = useState({ total: 0, hoy: 0, porVista: { contratista: 0, cliente: 0, constructora: 0, propietario: 0 }, porHora: new Array(24).fill(0) });
+  const [aperturas, setAperturas] = useState({ total: 0, hoy: 0, ultima: null, hoyPorVista: { contratista: 0, cliente: 0, constructora: 0, propietario: 0 }, porVista: { contratista: 0, cliente: 0, constructora: 0, propietario: 0 }, porHora: new Array(24).fill(0) });
   const [estadoApps, setEstadoApps] = useState({ contratista: { errores: 0 }, cliente: { errores: 0 }, constructora: { errores: 0 }, propietario: { errores: 0 } });
   const [costoClaude, setCostoClaude] = useState({ mes: null, hoy: null, porApp: [], ultimos7: [] }); // null = todavía no cargó
   const [incidentes, setIncidentes] = useState([]);
@@ -888,9 +911,11 @@ function Dashboard() {
       const [rTotal, rHoy, rVentana] = await Promise.all([
         fetch(SUPA_URL + "/rest/v1/aperturas?select=id", { headers: { ...SH(), Prefer: "count=exact", Range: "0-0" } }),
         fetch(SUPA_URL + "/rest/v1/aperturas?select=id&creado_en=gte." + encodeURIComponent(inicioHoyISO), { headers: { ...SH(), Prefer: "count=exact", Range: "0-0" } }),
-        fetch(SUPA_URL + "/rest/v1/aperturas?select=app,creado_en&creado_en=gte." + encodeURIComponent(desde30ISO) + "&limit=20000", { headers: SH() }),
+        fetch(SUPA_URL + "/rest/v1/aperturas?select=app,creado_en&creado_en=gte." + encodeURIComponent(desde30ISO) + "&order=creado_en.desc&limit=20000", { headers: SH() }),
       ]);
-      if (!rTotal.ok || !rHoy.ok || !rVentana.ok) throw new Error("HTTP " + rTotal.status + "/" + rHoy.status + "/" + rVentana.status);
+      // 416 = rango fuera de la tabla (tabla vacía): es un 0 legítimo, no una falla.
+      const okRango = (r) => r.ok || r.status === 416;
+      if (!okRango(rTotal) || !okRango(rHoy) || !rVentana.ok) throw new Error("HTTP " + rTotal.status + "/" + rHoy.status + "/" + rVentana.status);
 
       const totalDesdeRango = (r) => {
         const cr = r.headers.get("content-range"); // formato "0-0/1234"
@@ -900,18 +925,27 @@ function Dashboard() {
       };
 
       const total = totalDesdeRango(rTotal);
-      const hoy = totalDesdeRango(rHoy);
+      let hoy = totalDesdeRango(rHoy);
       const filasVentana = await rVentana.json();
 
       const porVista = { contratista: 0, cliente: 0, constructora: 0, propietario: 0 };
       const porHora = new Array(24).fill(0);
+      const hoyPorVista = { contratista: 0, cliente: 0, constructora: 0, propietario: 0 };
+      const inicioHoyMs = new Date().setHours(0, 0, 0, 0);
+      let hoyFilas = 0;
       (filasVentana || []).forEach(f => {
         if (f.app && porVista.hasOwnProperty(f.app)) porVista[f.app]++;
         const fecha = new Date(f.creado_en);
-        if (!isNaN(fecha)) porHora[fecha.getHours()]++;
+        if (!isNaN(fecha)) {
+          porHora[fecha.getHours()]++;
+          if (fecha.getTime() >= inicioHoyMs) { hoyFilas++; if (f.app && hoyPorVista.hasOwnProperty(f.app)) hoyPorVista[f.app]++; }
+        }
       });
+      // El contador "hoy" nunca puede ser menor que las filas de hoy que vemos.
+      if (hoyFilas > hoy) hoy = hoyFilas;
+      const ultima = filasVentana && filasVentana.length ? filasVentana[0].creado_en : null;
 
-      setAperturas({ total, hoy, porVista, porHora });
+      setAperturas({ total, hoy, ultima, hoyPorVista, porVista, porHora });
       setFallas(f => ({ ...f, aperturas: false }));
     } catch (e) {
       setFallas(f => ({ ...f, aperturas: true }));
@@ -1105,6 +1139,9 @@ function Dashboard() {
     },
   ];
 
+  const latsOk = [salud.vercel, salud.claude, salud.resend].filter(x => x && x.ok && typeof x.latenciaMs === "number").map(x => x.latenciaMs);
+  const latenciaProm = latsOk.length ? latsOk.reduce((a, b) => a + b, 0) / latsOk.length : null;
+
   return h("div", { className: "shell" },
     // Topbar
     h("div", { className: "topbar" },
@@ -1173,7 +1210,7 @@ function Dashboard() {
     ),
 
     // Estado de las apps — vigía en vivo, avisa sin que nadie tenga que llamar
-    h("div", { className: "section-label", style: fallas.apps ? { color: "#FF453A" } : {} }, "Estado de las apps", fallas.apps && h(BadgeFalla)),
+    h("div", { className: "section-label", style: fallas.apps ? { color: "#d1645a" } : {} }, "Estado de las apps", fallas.apps && h(BadgeFalla)),
     h("div", { className: "gauge-grid" },
       [
         { label: "App Contratista", tag: "contratista" },
@@ -1183,13 +1220,41 @@ function Dashboard() {
       ].map((a, i) => {
         const e = estadoApps[a.tag] || { errores: 0 };
         const ok = e.errores === 0;
-        return h("div", { className: "gauge", key: i, style: { border: "1px solid " + (ok ? "rgba(52,199,89,.4)" : "rgba(255,69,58,.5)") } },
+        return h("div", { className: "gauge", key: i, style: { border: "1px solid " + (ok ? "rgba(107,180,138,.4)" : "rgba(209,100,90,.5)") } },
           h("div", { className: "gauge-label" }, a.label),
-          h("div", { style: { fontSize: 15, fontWeight: 700, color: ok ? "#34C759" : "#FF453A", marginTop: 4 } },
+          h("div", { style: { fontSize: 15, fontWeight: 700, color: ok ? "#6bb48a" : "#d1645a", marginTop: 4 } },
             ok ? "✓ OK" : ("⚠ " + e.errores + (e.errores === 1 ? " error" : " errores"))
           ),
           !ok && e.ultimo && h("div", { style: { fontSize: 10.5, color: "#9AA5B1", marginTop: 4, lineHeight: 1.4 } }, e.ultimo.slice(0, 90))
         );
+      })
+    ),
+
+    // Instrumentos — relojes con aguja
+    h("div", { className: "section-label" }, "Instrumentos", (fallas.uptime || fallas.aperturas) && h(BadgeFalla)),
+    h("div", { className: "dial-grid" },
+      Dial({
+        titulo: "Señal de conexión", valor: uptime.senal, max: 100,
+        color: uptime.senal === null ? "#636366" : uptime.senal >= 75 ? "#6bb48a" : uptime.senal >= 40 ? "#c9a55c" : "#d1645a",
+        texto: uptime.senal === null ? "" : Math.round(uptime.senal) + "%",
+        pie: uptime.senal === null ? "Juntando datos" : uptime.senal >= 75 ? "Excelente" : uptime.senal >= 40 ? "Inestable" : "Con problemas",
+        sub: uptime.pct !== null ? "Uptime 24hs · " + uptime.pct.toFixed(1) + "%" : "",
+      }),
+      Dial({
+        titulo: "Latencia promedio", valor: latenciaProm, max: 2000,
+        color: latenciaProm !== null && latenciaProm > 1500 ? "#d1645a" : latenciaProm !== null && latenciaProm > 800 ? "#c9a55c" : "#7a9fc4",
+        texto: latenciaProm === null ? "" : Math.round(latenciaProm) + "ms", pie: "Escala 0–2000 ms",
+        sub: "Vercel · Claude · Resend",
+      }),
+      Dial({
+        titulo: "Aperturas hoy", valor: aperturas.hoy, max: Math.max(10, Math.ceil(aperturas.hoy / 10) * 10),
+        color: "#b8996a", texto: String(aperturas.hoy), pie: "Escala 0–" + Math.max(10, Math.ceil(aperturas.hoy / 10) * 10),
+        sub: aperturas.ultima ? "Última · " + hace(aperturas.ultima) : "Sin aperturas todavía",
+      }),
+      Dial({
+        titulo: "Costo del mes", valor: totalCostos, max: Math.max(100, Math.ceil(totalCostos / 50) * 50),
+        color: "#c9a55c", texto: "$" + Math.round(totalCostos), pie: "Escala 0–" + Math.max(100, Math.ceil(totalCostos / 50) * 50) + " USD",
+        sub: "Supabase + Vercel + Claude",
       })
     ),
 
@@ -1202,13 +1267,13 @@ function Dashboard() {
           return h("div", {
             key: a.id,
             style: {
-              background: critica ? "rgba(255,69,58,.1)" : "rgba(255,214,10,.08)",
-              border: "1px solid " + (critica ? "rgba(255,69,58,.4)" : "rgba(255,214,10,.35)"),
+              background: critica ? "rgba(209,100,90,.1)" : "rgba(201,165,92,.08)",
+              border: "1px solid " + (critica ? "rgba(209,100,90,.4)" : "rgba(201,165,92,.35)"),
               borderRadius: 12, padding: "12px 14px",
             },
           },
             h("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
-              h("span", { style: { fontSize: 11, fontWeight: 700, color: critica ? "#FF453A" : "#FFD60A" } }, critica ? "🔴 CRÍTICA" : "🟡 ATENCIÓN"),
+              h("span", { style: { fontSize: 11, fontWeight: 700, color: critica ? "#d1645a" : "#c9a55c" } }, critica ? "🔴 CRÍTICA" : "🟡 ATENCIÓN"),
               h("span", { style: { fontSize: 13, fontWeight: 700, color: "var(--text)" } }, a.titulo)
             ),
             a.detalle && h("div", { style: { fontSize: 12, color: "var(--text-faint)", marginTop: 4 } }, a.detalle)
@@ -1264,45 +1329,42 @@ function Dashboard() {
       [
         { label: "Aperturas totales", val: aperturas.total },
         { label: "Aperturas hoy", val: aperturas.hoy },
+        { label: "Última apertura", val: aperturas.ultima ? hace(aperturas.ultima) : "—" },
       ].map((g, i) =>
         h("div", { className: "gauge", key: i },
           h("div", { className: "gauge-label" }, g.label),
-          h("div", { className: "gauge-num" + (g.val === 0 ? " zero" : "") }, g.val)
+          h("div", { className: "gauge-num" + (g.val === 0 || g.val === "—" ? " zero" : ""), style: typeof g.val === "string" ? { fontSize: 20 } : undefined }, g.val)
         )
+      )
+    ),
+    h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10, fontSize: 12, color: "var(--text-faint)" } },
+      "Hoy por vista:",
+      [["Contratista", "contratista", "#a98c5c"], ["Cliente", "cliente", "#6bb48a"], ["Constructora", "constructora", "#7a9fc4"], ["Propietario", "propietario", "#c4806f"]].map(([n, k, c]) =>
+        h("span", { key: k, style: { border: "1px solid " + c, borderRadius: 999, padding: "2px 10px", color: c } }, n + " " + aperturas.hoyPorVista[k])
       )
     ),
     h("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 10, marginTop: 10 } },
       h("div", { className: "gauge", style: { padding: "16px" } },
-        h("div", { className: "gauge-label", style: { marginBottom: 12 } }, "Uso por vista"),
-        DonutConLeyenda({
-          size: 120,
-          data: [
-            { label: "Contratista", value: aperturas.porVista.contratista, color: "#B0894F" },
-            { label: "Cliente", value: aperturas.porVista.cliente, color: "#3DDC84" },
-            { label: "Constructora", value: aperturas.porVista.constructora, color: "#5B9BD5" },
-            { label: "Propietario", value: aperturas.porVista.propietario, color: "#D5715B" },
-          ],
-        })
+        h("div", { className: "gauge-label", style: { marginBottom: 12 } }, "Uso por vista · aperturas"),
+        [["Contratista", "contratista", "#a98c5c"], ["Cliente", "cliente", "#6bb48a"], ["Constructora", "constructora", "#7a9fc4"], ["Propietario", "propietario", "#c4806f"]].map(([n, k, c]) => {
+          const maxV = Math.max(1, aperturas.porVista.contratista, aperturas.porVista.cliente, aperturas.porVista.constructora, aperturas.porVista.propietario);
+          const v = aperturas.porVista[k];
+          return h("div", { key: k, style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 12 } },
+            h("div", { style: { width: 92, fontSize: 11, letterSpacing: ".04em", color: c, textTransform: "uppercase" } }, n),
+            h("div", { style: { flex: 1, height: 12, borderRadius: 6, background: "#111113", border: "1px solid #2c2c2e", overflow: "hidden" } },
+              h("div", { style: { width: (v / maxV * 100) + "%", height: "100%", background: c } })
+            ),
+            h("div", { style: { width: 34, textAlign: "right", fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace", fontSize: 17, fontWeight: 600, color: c } }, v)
+          );
+        }),
+        h("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--text-faint)", borderTop: "1px solid #2c2c2e", paddingTop: 8 } },
+          h("span", null, "TOTAL (30 días)"),
+          h("span", { style: { color: "var(--text)", fontWeight: 600 } }, aperturas.porVista.contratista + aperturas.porVista.cliente + aperturas.porVista.constructora + aperturas.porVista.propietario)
+        )
       ),
       h("div", { className: "gauge", style: { padding: "16px", display: "flex", flexDirection: "column", alignItems: "center" } },
         h("div", { className: "gauge-label", style: { marginBottom: 4, alignSelf: "flex-start" } }, "Horario de más actividad"),
         RelojActividad({ porHora: aperturas.porHora, size: 148 })
-      ),
-      h("div", { className: "gauge", style: { padding: "16px" } },
-        h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } },
-          h("div", { className: "gauge-label", style: { marginBottom: 0 } }, "Latencia en vivo"),
-          uptime.historial.length > 0 && h("div", { style: { display: "flex", alignItems: "center", gap: 4 } },
-            h("span", { style: { width: 6, height: 6, borderRadius: "50%", background: "#3DDC84", boxShadow: "0 0 6px #3DDC84", animation: "pulso 1.6s ease-in-out infinite" } }),
-            h("span", { style: { fontSize: 9, color: "var(--text-faint)", letterSpacing: ".05em" } }, "EN VIVO")
-          )
-        ),
-        SparklineLatencia({ historial: uptime.historial, width: 220 }),
-        uptime.historial.length > 0 && h("div", { style: { fontSize: 10, color: "var(--text-faint)", marginTop: 4 } }, "Promedio de Vercel · Claude · Resend · Supabase, últimos chequeos")
-      ),
-      h("div", { className: "gauge", style: { padding: "16px", display: "flex", flexDirection: "column", alignItems: "center" } },
-        h("div", { className: "gauge-label", style: { marginBottom: 4, alignSelf: "flex-start" } }, "Señal de conexión"),
-        GaugeSenal({ score: uptime.senal, size: 148 }),
-        uptime.pct !== null && h("div", { style: { fontSize: 10, color: "var(--text-faint)", marginTop: 6 } }, "Uptime 24hs: " + uptime.pct.toFixed(1) + "%")
       )
     ),
 
@@ -1315,7 +1377,7 @@ function Dashboard() {
             h("div", { className: "cost-name" },
               c.nombre,
               " ",
-              h("span", { style: { fontSize: 9.5, fontWeight: 700, letterSpacing: .3, padding: "2px 6px", borderRadius: 5, marginLeft: 4, color: c.fuente === "real" ? "#34C759" : c.fuente === "manual" ? "#B0894F" : "#7A8699", background: c.fuente === "real" ? "rgba(52,199,89,.12)" : c.fuente === "manual" ? "rgba(176,137,79,.15)" : "rgba(122,134,153,.12)" } }, c.fuente === "real" ? "REAL" : c.fuente === "manual" ? "MANUAL" : "GRATIS")
+              h("span", { style: { fontSize: 9.5, fontWeight: 700, letterSpacing: .3, padding: "2px 6px", borderRadius: 5, marginLeft: 4, color: c.fuente === "real" ? "#6bb48a" : c.fuente === "manual" ? "#a98c5c" : "#7A8699", background: c.fuente === "real" ? "rgba(107,180,138,.12)" : c.fuente === "manual" ? "rgba(169,140,92,.15)" : "rgba(122,134,153,.12)" } }, c.fuente === "real" ? "REAL" : c.fuente === "manual" ? "MANUAL" : "GRATIS")
             ),
             h("div", { className: "cost-tag" }, c.tag)
           ),
@@ -1326,7 +1388,7 @@ function Dashboard() {
         h("div", { className: "cost-total-label" }, "Total mensual"),
         h("div", { className: "cost-total-amount" }, "$" + totalCostos.toFixed(2) + " USD")
       ),
-      costoClaude.mes !== null && costoClaude.porApp.length > 0 && h("div", { style: { padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,.06)" } },
+      costoClaude.mes !== null && costoClaude.porApp.length > 0 && h("div", { style: { padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,.08)" } },
         h("div", { style: { fontSize: 10.5, fontWeight: 700, color: "#7A8699", letterSpacing: .3, marginBottom: 8 } }, "CLAUDE API — DESGLOSE POR APP (MES EN CURSO)"),
         costoClaude.porApp.map((p, i) =>
           h("div", { key: i, style: { display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "#C7D0DB", padding: "3px 0" } },
@@ -1336,7 +1398,7 @@ function Dashboard() {
         ),
         costoClaude.hoy !== null && h("div", { style: { fontSize: 11, color: "#7A8699", marginTop: 8 } }, "Hoy: $" + costoClaude.hoy.toFixed(2))
       ),
-      costoClaude.ultimos7.length > 0 && h("div", { style: { padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,.06)" } },
+      costoClaude.ultimos7.length > 0 && h("div", { style: { padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,.08)" } },
         h("div", { style: { fontSize: 10.5, fontWeight: 700, color: "#7A8699", letterSpacing: .3, marginBottom: 6 } }, "CLAUDE API — ÚLTIMOS 7 DÍAS"),
         BarrasCosto7Dias({ data: costoClaude.ultimos7, width: 280 })
       ),
@@ -1357,14 +1419,14 @@ function Dashboard() {
             return h("div", {
               key: inc.id,
               style: {
-                background: "var(--panel)", border: "1px solid " + (abierto ? "rgba(255,69,58,.35)" : "var(--border)"),
+                background: "var(--panel)", border: "1px solid " + (abierto ? "rgba(209,100,90,.35)" : "var(--border)"),
                 borderRadius: 14, padding: "14px 16px", opacity: abierto ? 1 : .55,
               },
             },
               h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 } },
                 h("div", { style: { flex: 1 } },
                   h("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
-                    h("span", { style: { fontSize: 11, fontWeight: 700, color: abierto ? "#FF453A" : "#34C759" } }, abierto ? "⚠ ABIERTO" : "✓ RESUELTO"),
+                    h("span", { style: { fontSize: 11, fontWeight: 700, color: abierto ? "#d1645a" : "#6bb48a" } }, abierto ? "⚠ ABIERTO" : "✓ RESUELTO"),
                     h("span", { style: { fontSize: 11, color: "var(--text-faint)", textTransform: "uppercase" } }, inc.app)
                   ),
                   h("div", { style: { fontSize: 13, color: "var(--text)", marginTop: 4, lineHeight: 1.4 } }, (inc.mensaje || "").slice(0, 140)),
@@ -1376,7 +1438,7 @@ function Dashboard() {
                 ),
                 abierto && h("button", {
                   onClick: () => marcarResuelto(inc.id),
-                  style: { background: "rgba(52,199,89,.12)", color: "#34C759", border: "1px solid rgba(52,199,89,.4)", borderRadius: 8, padding: "6px 12px", fontSize: 11.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" },
+                  style: { background: "rgba(107,180,138,.12)", color: "#6bb48a", border: "1px solid rgba(107,180,138,.4)", borderRadius: 8, padding: "6px 12px", fontSize: 11.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" },
                 }, "Marcar resuelto")
               )
             );
@@ -1633,8 +1695,8 @@ function DetalleCliente({ cliente, onVolver, onActualizado }) {
             h("span", {
               style: {
                 fontSize: 10.5, fontWeight: 700, padding: "4px 10px", borderRadius: 20, textTransform: "uppercase",
-                color: cliente.estado === "activo" ? "#3DDC84" : cliente.estado === "pausado" ? "#FFD60A" : "#7A8699",
-                background: cliente.estado === "activo" ? "rgba(61,220,132,.12)" : cliente.estado === "pausado" ? "rgba(255,214,10,.12)" : "rgba(122,134,153,.12)",
+                color: cliente.estado === "activo" ? "#6bb48a" : cliente.estado === "pausado" ? "#c9a55c" : "#7A8699",
+                background: cliente.estado === "activo" ? "rgba(107,180,138,.12)" : cliente.estado === "pausado" ? "rgba(201,165,92,.12)" : "rgba(122,134,153,.12)",
               },
             }, cliente.estado)
           ),
@@ -1645,7 +1707,7 @@ function DetalleCliente({ cliente, onVolver, onActualizado }) {
             }, "Editar"),
             h("button", {
               onClick: eliminarCliente,
-              style: { background: "rgba(255,69,58,.1)", border: "1px solid rgba(255,69,58,.35)", color: "#FF453A", borderRadius: 8, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" },
+              style: { background: "rgba(209,100,90,.1)", border: "1px solid rgba(209,100,90,.35)", color: "#d1645a", borderRadius: 8, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" },
             }, "Eliminar")
           )
         )
@@ -1689,8 +1751,8 @@ function DetalleCliente({ cliente, onVolver, onActualizado }) {
               h("div", { className: "section-label" }, "Incidentes de " + cliente.nombre),
               h("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
                 datos.incidentesAbiertos.map(inc =>
-                  h("div", { key: inc.id, style: { background: "var(--panel)", border: "1px solid rgba(255,69,58,.35)", borderRadius: 12, padding: "12px 14px" } },
-                    h("div", { style: { fontSize: 11, fontWeight: 700, color: "#FF453A" } }, inc.app),
+                  h("div", { key: inc.id, style: { background: "var(--panel)", border: "1px solid rgba(209,100,90,.35)", borderRadius: 12, padding: "12px 14px" } },
+                    h("div", { style: { fontSize: 11, fontWeight: 700, color: "#d1645a" } }, inc.app),
                     h("div", { style: { fontSize: 12.5, color: "var(--text)", marginTop: 3 } }, (inc.mensaje || "").slice(0, 140)),
                     h("div", { style: { fontSize: 10.5, color: "var(--text-faint)", marginTop: 3 } }, inc.ocurrencias + " ocurrencias")
                   )
