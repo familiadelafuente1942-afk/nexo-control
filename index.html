@@ -1146,9 +1146,9 @@ function Dashboard() {
     // Topbar
     h("div", { className: "topbar" },
       h("div", { className: "brand" },
-        h("div", { className: "brand-mark" }, h("span")),
+        h("div", { style: { background: "#000", border: "1px solid #2c2c2e", borderRadius: 20, overflow: "hidden", lineHeight: 0, flexShrink: 0 } }, h("img", { src: NEXO_LOGO_B64, alt: "NEXO", style: { height: 92, width: "auto", display: "block" } })),
         h("div", null,
-          h("div", { className: "brand-name" }, "NEXO Control"),
+          h("div", { className: "brand-name", style: { fontSize: 20 } }, "Control"),
           h("div", { className: "brand-sub" }, "Panel interno")
         )
       ),
