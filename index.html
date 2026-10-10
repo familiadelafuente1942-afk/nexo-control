@@ -219,8 +219,8 @@
   .hero, .chip, .gauge, .dial-card, .cost-card, .incidents-empty{
     background:linear-gradient(145deg, rgba(255,255,255,.72), rgba(255,255,255,.34));
     -webkit-backdrop-filter:blur(24px) saturate(1.8); backdrop-filter:blur(24px) saturate(1.8);
-    border:1px solid rgba(255,255,255,.92);
-    box-shadow:0 14px 36px rgba(40,70,140,.10), inset 0 2px 0 rgba(255,255,255,.95), inset 0 -1px 0 rgba(120,150,210,.12);
+    border:1.5px solid rgba(255,255,255,.98);
+    box-shadow:0 14px 36px rgba(40,70,140,.12), inset 0 0 0 1px rgba(255,255,255,.55), inset 0 2px 0 rgba(255,255,255,.95), inset 0 -1px 0 rgba(120,150,210,.14);
   }
   .hero{ border-radius:28px; }
   .dial-card{ border-radius:28px; }
@@ -237,28 +237,29 @@
   .btn-refresh:hover{ color:#0a6fe0; border-color:#fff; }
   .hero-dot, .chip-led{
     position:relative; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;
-    width:34px; height:34px; border-radius:50%; font-size:34px;
-    border:2px solid rgba(255,255,255,.95);
-    -webkit-backdrop-filter:blur(8px) saturate(1.8); backdrop-filter:blur(8px) saturate(1.8);
-    box-shadow:0 10px 20px var(--orb-sombra,rgba(0,0,0,.25)), 0 2px 4px rgba(0,0,0,.12),
-      inset 0 3px 3px rgba(255,255,255,.95), inset 0 -7px 10px rgba(0,40,30,.28), inset 0 0 0 1px rgba(255,255,255,.35);
+    width:34px; height:34px; border-radius:30%; font-size:34px; overflow:hidden;
+    border:1.5px solid rgba(255,255,255,.95);
+    -webkit-backdrop-filter:blur(14px) saturate(2); backdrop-filter:blur(14px) saturate(2);
+    box-shadow:0 12px 24px var(--orb-sombra,rgba(0,0,0,.25)), 0 1px 2px rgba(0,0,0,.10),
+      inset 0 0 0 1px rgba(255,255,255,.55), inset 0 3px 6px rgba(255,255,255,.85), inset 0 -8px 14px var(--orb-int,rgba(0,40,30,.25));
   }
   .hero-dot::before, .chip-led::before{
-    content:''; position:absolute; left:14%; top:6%; width:72%; height:42%; border-radius:50%;
-    background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,0));
+    content:''; position:absolute; left:0; top:0; right:0; height:52%;
+    background:linear-gradient(180deg, rgba(255,255,255,.80), rgba(255,255,255,.05));
+    border-radius:30% 30% 60% 60% / 30% 30% 40% 40%;
   }
   .hero-dot::after, .chip-led::after{
-    position:relative; color:#fff; font-weight:800; font-size:.5em; line-height:1;
-    text-shadow:0 2px 3px rgba(0,0,0,.35);
+    position:relative; color:#fff; font-weight:800; font-size:.52em; line-height:1;
+    text-shadow:0 2px 4px rgba(0,0,0,.35);
   }
-  .hero-dot.g, .chip-led.g{ --orb-sombra:rgba(25,160,90,.45); background:radial-gradient(circle at 30% 22%, #c9fadb, #4fdc7e 38%, #1a9a46 100%); }
-  .hero-dot.y, .chip-led.y{ --orb-sombra:rgba(230,150,20,.45); background:radial-gradient(circle at 30% 22%, #fff0c4, #ffc23d 38%, #d98a00 100%); }
-  .hero-dot.r, .chip-led.r{ --orb-sombra:rgba(214,69,59,.45); background:radial-gradient(circle at 30% 22%, #ffd0cb, #ff6a5d 38%, #c9382e 100%); }
+  .hero-dot.g, .chip-led.g{ --orb-sombra:rgba(25,160,90,.38); --orb-int:rgba(0,90,40,.40); background:linear-gradient(150deg, rgba(120,240,160,.82), rgba(20,170,85,.88)); }
+  .hero-dot.y, .chip-led.y{ --orb-sombra:rgba(230,150,20,.38); --orb-int:rgba(150,80,0,.38); background:linear-gradient(150deg, rgba(255,225,130,.85), rgba(240,160,20,.90)); }
+  .hero-dot.r, .chip-led.r{ --orb-sombra:rgba(214,69,59,.38); --orb-int:rgba(130,20,10,.40); background:linear-gradient(150deg, rgba(255,160,150,.85), rgba(220,60,50,.90)); }
   .hero-dot.g::after, .chip-led.g::after{ content:'✓'; }
   .hero-dot.y::after, .chip-led.y::after{ content:'!'; }
   .hero-dot.r::after, .chip-led.r::after{ content:'✕'; }
   .hero-dot{ width:64px; height:64px; font-size:64px; }
-  .chip-led{ width:34px; height:34px; font-size:34px; }
+  .chip-led{ width:36px; height:36px; font-size:36px; }
   .hero-row{ gap:18px; }
   .hero-title{ font-size:22px; }
 </style>
@@ -741,7 +742,7 @@ function DonutConLeyenda({ data, size }) {
 
 // Reloj de 24hs — a qué hora del día se usa más el sistema
 function RelojActividad({ porHora, size }) {
-  size = size || 250;
+  size = size || 260;
   const cx = size / 2, cy = size / 2;
   const rInner = size * 0.2, rOuterMax = size * 0.34;
   const max = Math.max(1, ...porHora);
@@ -756,7 +757,7 @@ function RelojActividad({ porHora, size }) {
       key: hora,
       x1: cx + rInner * Math.cos(rad), y1: cy + rInner * Math.sin(rad),
       x2: cx + largo * Math.cos(rad), y2: cy + largo * Math.sin(rad),
-      stroke: esPico ? "#ff9a2e" : (val > 0 ? "#c8962f" : "rgba(60,80,120,.30)"),
+      stroke: esPico ? "#ff9a2e" : (val > 0 ? "#f2c76e" : "rgba(255,255,255,.22)"),
       strokeWidth: esPico ? 5.4 : 3.6, strokeLinecap: "round",
       filter: esPico ? "url(#relojGlow)" : undefined,
     }));
@@ -765,26 +766,31 @@ function RelojActividad({ porHora, size }) {
     const angle = (hh / 24) * 360 - 90;
     const rad = (angle * Math.PI) / 180;
     return h("text", {
-      key: hh, x: cx + (rOuterMax + 24) * Math.cos(rad), y: cy + (rOuterMax + 24) * Math.sin(rad),
-      textAnchor: "middle", dominantBaseline: "middle", fontSize: 12, fontWeight: 800, fill: "#6e6e73",
+      key: hh, x: cx + (rOuterMax + 20) * Math.cos(rad), y: cy + (rOuterMax + 20) * Math.sin(rad),
+      textAnchor: "middle", dominantBaseline: "middle", fontSize: 10.5, fontWeight: 800, fill: "rgba(255,255,255,.8)",
     }, String(hh).padStart(2, "0") + "h");
   });
   const totalUso = porHora.reduce((a, b) => a + b, 0);
   const picoHora = totalUso > 0 ? porHora.indexOf(max) : null;
   return h("div", { style: { display: "flex", flexDirection: "column", alignItems: "center", width: "100%" } },
-    h("div", { style: { position: "relative", width: size, maxWidth: "100%", aspectRatio: "1 / 1", borderRadius: "50%", background: "linear-gradient(145deg,rgba(255,255,255,.8),rgba(255,255,255,.2))", WebkitBackdropFilter: "blur(18px) saturate(1.8)", backdropFilter: "blur(18px) saturate(1.8)", border: "2.5px solid rgba(255,255,255,.98)", boxShadow: "0 28px 46px rgba(150,80,200,.26), 0 4px 8px rgba(40,70,140,.12), inset 0 4px 3px #fff, inset 0 -9px 16px rgba(170,140,230,.38), inset 0 0 28px rgba(255,255,255,.5)" } },
-      h("svg", { width: "100%", height: "100%", viewBox: `0 0 ${size} ${size}`, style: { display: "block" } },
-        h("defs", null, h("filter", { id: "relojGlow", x: "-60%", y: "-60%", width: "220%", height: "220%" }, h("feGaussianBlur", { stdDeviation: 2.4 }))),
-        h("circle", { cx, cy, r: rInner, fill: "rgba(255,255,255,.55)", stroke: "rgba(60,80,130,.18)", strokeWidth: 1 }),
-        h("circle", { cx, cy, r: size * 0.485, fill: "none", stroke: "rgba(255,255,255,.95)", strokeWidth: 3 }),
-        h("circle", { cx, cy, r: rOuterMax + 3, fill: "none", stroke: "rgba(60,80,130,.22)", strokeWidth: 1.2 }),
-        Array.from({ length: 24 }, (_, hh) => { const rad = ((hh / 24) * 360 - 90) * Math.PI / 180; const l = hh % 6 === 0 ? 11 : 6; return h("line", { key: "tk" + hh, x1: cx + (rOuterMax + 4) * Math.cos(rad), y1: cy + (rOuterMax + 4) * Math.sin(rad), x2: cx + (rOuterMax + 4 + l) * Math.cos(rad), y2: cy + (rOuterMax + 4 + l) * Math.sin(rad), stroke: "rgba(40,60,100,.55)", strokeWidth: hh % 6 === 0 ? 3 : 1.8, strokeLinecap: "round" }); }),
-        marcas, etiquetas,
-        h("text", { x: cx, y: cy + 1, textAnchor: "middle", dominantBaseline: "middle", fontSize: size * 0.1, fontWeight: 800, fill: "#1d1d1f", opacity: .85 }, picoHora === null ? "—" : String(picoHora).padStart(2, "0") + ":00")
-      ),
-      h("div", { style: { position: "absolute", left: "14%", top: "5%", width: "72%", height: "34%", borderRadius: "50% 50% 46% 46% / 62% 62% 38% 38%", background: "linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,0))", pointerEvents: "none" } })
+    // bisel cromado
+    h("div", { style: { position: "relative", width: size, maxWidth: "100%", aspectRatio: "1 / 1", borderRadius: "50%", padding: 8, background: "conic-gradient(from 210deg, #f4f6fa, #8b929d, #e9edf3, #6c727c, #f4f6fa, #9aa1ac, #f4f6fa)", boxShadow: "0 28px 46px rgba(20,30,60,.38), 0 4px 8px rgba(20,30,60,.2), inset 0 2px 2px rgba(255,255,255,.95)" } },
+      h("div", { style: { position: "relative", width: "100%", height: "100%", borderRadius: "50%", background: "radial-gradient(circle at 35% 25%, #3b3f47 0%, #15171b 55%, #060709 100%)", boxShadow: "inset 0 6px 14px rgba(0,0,0,.8), inset 0 -2px 4px rgba(255,255,255,.12)", overflow: "hidden" } },
+        h("svg", { width: "100%", height: "100%", viewBox: `0 0 ${size - 16} ${size - 16}`, style: { display: "block" } },
+          h("g", { transform: "translate(-8 -8)" },
+            h("defs", null, h("filter", { id: "relojGlow", x: "-60%", y: "-60%", width: "220%", height: "220%" }, h("feGaussianBlur", { stdDeviation: 2.6 }))),
+            h("circle", { cx, cy, r: rInner, fill: "rgba(255,255,255,.04)", stroke: "rgba(255,255,255,.22)", strokeWidth: 1 }),
+            h("circle", { cx, cy, r: rOuterMax + 3, fill: "none", stroke: "rgba(255,255,255,.22)", strokeWidth: 1.2 }),
+            Array.from({ length: 24 }, (_, hh) => { const rad = ((hh / 24) * 360 - 90) * Math.PI / 180; const l = hh % 6 === 0 ? 8 : 5; return h("line", { key: "tk" + hh, x1: cx + (rOuterMax + 4) * Math.cos(rad), y1: cy + (rOuterMax + 4) * Math.sin(rad), x2: cx + (rOuterMax + 4 + l) * Math.cos(rad), y2: cy + (rOuterMax + 4 + l) * Math.sin(rad), stroke: "rgba(255,255,255,.62)", strokeWidth: hh % 6 === 0 ? 3 : 1.8, strokeLinecap: "round" }); }),
+            marcas, etiquetas,
+            h("text", { x: cx, y: cy - 2, textAnchor: "middle", dominantBaseline: "middle", fontSize: size * 0.105, fontWeight: 800, fill: "#ffffff" }, picoHora === null ? "—" : String(picoHora).padStart(2, "0") + ":00"),
+            h("text", { x: cx, y: cy + size * 0.075, textAnchor: "middle", dominantBaseline: "middle", fontSize: 8.5, fontWeight: 700, letterSpacing: 1, fill: "#f2c76e" }, "HORARIO PICO")
+          )
+        ),
+        h("div", { style: { position: "absolute", left: "12%", top: "4%", width: "76%", height: "30%", borderRadius: "50% 50% 46% 46% / 62% 62% 38% 38%", background: "linear-gradient(180deg,rgba(255,255,255,.20),rgba(255,255,255,0))", pointerEvents: "none" } })
+      )
     ),
-    h("div", { style: { fontSize: 13, color: "var(--text-dim)", marginTop: 10 } },
+    h("div", { style: { fontSize: 13, color: "var(--text-dim)", marginTop: 12 } },
       picoHora === null ? "Sin datos todavía" : ["Pico de uso: ", h("span", { key: "p", style: { color: "#e07a10", fontWeight: 700 } }, String(picoHora).padStart(2, "0") + ":00hs")]
     )
   );
