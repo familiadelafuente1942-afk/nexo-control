@@ -6,19 +6,20 @@
 <title>NEXO Control</title>
 <style>
   :root{
-    --bg: #0b0b0d;
-    --panel: #1c1c1e;
-    --panel-2: #2c2c2e;
-    --border: #2c2c2e;
-    --text: #f2f2f7;
-    --text-dim: #8e8e93;
-    --text-faint: #636366;
-    --green: #6bb48a;
-    --amber: #c9a55c;
-    --red: #d1645a;
-    --brass: #b8996a;
+    --bg: #f2f2f7;
+    --panel: #ffffff;
+    --panel-2: #f2f2f7;
+    --border: #e5e5ea;
+    --text: #1c1c1e;
+    --text-dim: #6e6e73;
+    --text-faint: #8e8e93;
+    --green: #2e9e5b;
+    --amber: #c48a1c;
+    --red: #d6453b;
+    --brass: #a07c3a;
   }
   *{ box-sizing: border-box; }
+  .gauge, .chip, .dial-card, .cost-card, .hero{ box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 2px 10px rgba(0,0,0,.03); }
   html,body{ margin:0; padding:0; background:var(--bg); }
   body{
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', system-ui, sans-serif;
@@ -53,7 +54,7 @@
   .gate-input:focus{ outline:none; border-color:var(--brass); }
   .gate-btn{
     width:100%; margin-top:12px; padding:13px; border:none; border-radius:9px;
-    background:var(--brass); color:#151109; font-weight:700; font-size:14px;
+    background:var(--brass); color:#ffffff; font-weight:700; font-size:14px;
     cursor:pointer; letter-spacing:.01em;
   }
   .gate-btn:active{ transform: scale(0.99); }
@@ -697,7 +698,7 @@ function RelojActividad({ porHora, size }) {
       key: hora,
       x1: cx + rInner * Math.cos(rad), y1: cy + rInner * Math.sin(rad),
       x2: cx + largo * Math.cos(rad), y2: cy + largo * Math.sin(rad),
-      stroke: esPico ? "#6bb48a" : "rgba(169,140,92,.5)",
+      stroke: esPico ? "#2e9e5b" : "rgba(160,124,58,.5)",
       strokeWidth: esPico ? 3 : 2, strokeLinecap: "round",
     }));
   }
@@ -718,7 +719,7 @@ function RelojActividad({ porHora, size }) {
       marcas, etiquetas
     ),
     h("div", { style: { fontSize: 11.5, color: "var(--text-dim)", marginTop: 6 } },
-      picoHora === null ? "Sin datos todavía" : ["Pico de uso: ", h("span", { key: "p", style: { color: "#6bb48a", fontWeight: 700 } }, String(picoHora).padStart(2, "0") + ":00hs")]
+      picoHora === null ? "Sin datos todavía" : ["Pico de uso: ", h("span", { key: "p", style: { color: "#2e9e5b", fontWeight: 700 } }, String(picoHora).padStart(2, "0") + ":00hs")]
     )
   );
 }
@@ -736,7 +737,7 @@ function BarrasCosto7Dias({ data, width }) {
       const y = alto - bh;
       const esHoy = i === data.length - 1;
       return h("g", { key: i },
-        h("rect", { x, y, width: anchoBarra, height: Math.max(bh, 1.5), rx: 3, fill: esHoy ? "#a98c5c" : "rgba(169,140,92,.4)" }),
+        h("rect", { x, y, width: anchoBarra, height: Math.max(bh, 1.5), rx: 3, fill: esHoy ? "#a07c3a" : "rgba(160,124,58,.4)" }),
         h("text", { x: x + anchoBarra / 2, y: alto + 14, textAnchor: "middle", fontSize: 9, fill: "var(--text-faint)" }, d.etiqueta)
       );
     })
@@ -762,7 +763,7 @@ function SparklineLatencia({ historial, width }) {
   const ultimo = historial[historial.length - 1];
   const ultimoX = width;
   const ultimoY = alto - ((ultimo.ms - min) / rango) * alto * 0.8 - alto * 0.08;
-  const color = ultimo.ok ? "#6bb48a" : "#d1645a";
+  const color = ultimo.ok ? "#2e9e5b" : "#d6453b";
   return h("svg", { width: "100%", height: alto, viewBox: `0 0 ${width} ${alto}`, preserveAspectRatio: "none" },
     h("polyline", { points: puntos, fill: "none", stroke: color, strokeWidth: 2, strokeLinejoin: "round", strokeLinecap: "round" }),
     h("circle", { cx: ultimoX, cy: ultimoY, r: 3.5, fill: color }),
@@ -788,13 +789,13 @@ function GaugeSenal({ score, size }) {
   }
   const s = Math.max(0, Math.min(100, score));
   const punta = punto(s);
-  const color = s >= 75 ? "#6bb48a" : s >= 40 ? "#c9a55c" : "#d1645a";
+  const color = s >= 75 ? "#2e9e5b" : s >= 40 ? "#c48a1c" : "#d6453b";
   const etiqueta = s >= 75 ? "Excelente" : s >= 40 ? "Inestable" : "Con problemas";
   return h("div", { style: { display: "flex", flexDirection: "column", alignItems: "center" } },
     h("svg", { width: size, height: size * 0.62, viewBox: "0 0 " + size + " " + (size * 0.62) },
-      arco(0, 40, "rgba(209,100,90,.3)"),
-      arco(40, 75, "rgba(201,165,92,.3)"),
-      arco(75, 100, "rgba(107,180,138,.3)"),
+      arco(0, 40, "rgba(214,69,59,.3)"),
+      arco(40, 75, "rgba(196,138,28,.3)"),
+      arco(75, 100, "rgba(46,158,91,.3)"),
       h("line", { x1: cx, y1: cy, x2: punta.x, y2: punta.y, stroke: color, strokeWidth: 3, strokeLinecap: "round" }),
       h("circle", { cx, cy, r: 4.5, fill: color })
     ),
@@ -812,12 +813,12 @@ function Dial({ titulo, valor, max, color, texto, pie, sub }) {
   return h("div", { className: "dial-card" },
     h("div", { className: "gauge-label" }, titulo),
     h("svg", { viewBox: "0 0 200 200", role: "img", "aria-label": titulo + ": " + (hayDato ? texto : "sin datos"), style: { width: "100%", maxWidth: 200, height: "auto" } },
-      h("circle", { cx: 100, cy: 100, r: 92, fill: "none", stroke: "#3a3a3c", strokeWidth: 3, strokeDasharray: "2 " + ((ARCO * 92 / R - 54) / 27).toFixed(2), transform: "rotate(135 100 100)" }),
-      h("circle", { cx: 100, cy: 100, r: R, fill: "none", stroke: "#2c2c2e", strokeWidth: 12, strokeLinecap: "round", strokeDasharray: ARCO.toFixed(1) + " " + CIRC.toFixed(1), transform: "rotate(135 100 100)" }),
+      h("circle", { cx: 100, cy: 100, r: 92, fill: "none", stroke: "#d1d1d6", strokeWidth: 3, strokeDasharray: "2 " + ((ARCO * 92 / R - 54) / 27).toFixed(2), transform: "rotate(135 100 100)" }),
+      h("circle", { cx: 100, cy: 100, r: R, fill: "none", stroke: "#e5e5ea", strokeWidth: 12, strokeLinecap: "round", strokeDasharray: ARCO.toFixed(1) + " " + CIRC.toFixed(1), transform: "rotate(135 100 100)" }),
       hayDato && f > 0 && h("circle", { cx: 100, cy: 100, r: R, fill: "none", stroke: color, strokeWidth: 12, strokeLinecap: "round", strokeDasharray: (ARCO * f).toFixed(1) + " " + CIRC.toFixed(1), transform: "rotate(135 100 100)" }),
-      hayDato && h("line", { x1: 100, y1: 100, x2: 100, y2: 44, stroke: "#f2f2f7", strokeWidth: 3, strokeLinecap: "round", transform: "rotate(" + ang.toFixed(1) + " 100 100)" }),
-      h("circle", { cx: 100, cy: 100, r: 9, fill: "#1c1c1e", stroke: "#b8996a", strokeWidth: 3 }),
-      h("text", { x: 100, y: 152, textAnchor: "middle", fontFamily: "ui-monospace, Menlo, monospace", fontSize: 26, fontWeight: 600, fill: hayDato ? color : "#636366" }, hayDato ? texto : "—"),
+      hayDato && h("line", { x1: 100, y1: 100, x2: 100, y2: 44, stroke: "#1c1c1e", strokeWidth: 3, strokeLinecap: "round", transform: "rotate(" + ang.toFixed(1) + " 100 100)" }),
+      h("circle", { cx: 100, cy: 100, r: 9, fill: "#ffffff", stroke: "#a07c3a", strokeWidth: 3 }),
+      h("text", { x: 100, y: 152, textAnchor: "middle", fontFamily: "ui-monospace, Menlo, monospace", fontSize: 26, fontWeight: 600, fill: hayDato ? color : "#8e8e93" }, hayDato ? texto : "—"),
       h("text", { x: 100, y: 170, textAnchor: "middle", fontFamily: "-apple-system, Helvetica Neue, sans-serif", fontSize: 11, fill: "#8e8e93" }, pie || "")
     ),
     sub && h("div", { className: "dial-sub" }, sub)
@@ -830,7 +831,7 @@ function BadgeFalla() {
   return h("span", {
     style: {
       fontSize: 9.5, fontWeight: 700, letterSpacing: .3, padding: "3px 8px", borderRadius: 6,
-      color: "#d1645a", background: "rgba(209,100,90,.12)", border: "1px solid rgba(209,100,90,.35)",
+      color: "#d6453b", background: "rgba(214,69,59,.12)", border: "1px solid rgba(214,69,59,.35)",
       marginLeft: 8, whiteSpace: "nowrap",
     },
   }, "⚠ NO SE PUDO CONSULTAR");
@@ -1161,7 +1162,7 @@ function Dashboard({ tabs }) {
     h("div", { className: "topbar-sala" },
       h("div", { className: "tb-izq" }, tabs),
       h("div", { className: "tb-centro" },
-        h("div", { style: { background: "#000", border: "1px solid #2c2c2e", borderRadius: 20, overflow: "hidden", lineHeight: 0, flexShrink: 0 } },
+        h("div", { style: { background: "#000", border: "1px solid #e5e5ea", borderRadius: 20, overflow: "hidden", lineHeight: 0, flexShrink: 0 } },
           h("img", { src: NEXO_LOGO_B64, alt: "NEXO", style: { height: 110, width: "auto", display: "block" } })),
         h("div", { className: "brand-sub", style: { fontSize: 12, letterSpacing: ".1em" } }, "Panel interno")
       ),
@@ -1223,7 +1224,7 @@ function Dashboard({ tabs }) {
     ),
 
     // Estado de las apps — vigía en vivo, avisa sin que nadie tenga que llamar
-    h("div", { className: "section-label", style: fallas.apps ? { color: "#d1645a" } : {} }, "Estado de las apps", fallas.apps && h(BadgeFalla)),
+    h("div", { className: "section-label", style: fallas.apps ? { color: "#d6453b" } : {} }, "Estado de las apps", fallas.apps && h(BadgeFalla)),
     h("div", { className: "gauge-grid" },
       [
         { label: "App Contratista", tag: "contratista" },
@@ -1233,12 +1234,12 @@ function Dashboard({ tabs }) {
       ].map((a, i) => {
         const e = estadoApps[a.tag] || { errores: 0 };
         const ok = e.errores === 0;
-        return h("div", { className: "gauge", key: i, style: { border: "1px solid " + (ok ? "rgba(107,180,138,.4)" : "rgba(209,100,90,.5)") } },
+        return h("div", { className: "gauge", key: i, style: { border: "1px solid " + (ok ? "rgba(46,158,91,.4)" : "rgba(214,69,59,.5)") } },
           h("div", { className: "gauge-label" }, a.label),
-          h("div", { style: { fontSize: 15, fontWeight: 700, color: ok ? "#6bb48a" : "#d1645a", marginTop: 4 } },
+          h("div", { style: { fontSize: 15, fontWeight: 700, color: ok ? "#2e9e5b" : "#d6453b", marginTop: 4 } },
             ok ? "✓ OK" : ("⚠ " + e.errores + (e.errores === 1 ? " error" : " errores"))
           ),
-          !ok && e.ultimo && h("div", { style: { fontSize: 10.5, color: "#9AA5B1", marginTop: 4, lineHeight: 1.4 } }, e.ultimo.slice(0, 90))
+          !ok && e.ultimo && h("div", { style: { fontSize: 10.5, color: "#6e6e73", marginTop: 4, lineHeight: 1.4 } }, e.ultimo.slice(0, 90))
         );
       })
     ),
@@ -1248,25 +1249,25 @@ function Dashboard({ tabs }) {
     h("div", { className: "dial-grid" },
       Dial({
         titulo: "Señal de conexión", valor: uptime.senal, max: 100,
-        color: uptime.senal === null ? "#636366" : uptime.senal >= 75 ? "#6bb48a" : uptime.senal >= 40 ? "#c9a55c" : "#d1645a",
+        color: uptime.senal === null ? "#8e8e93" : uptime.senal >= 75 ? "#2e9e5b" : uptime.senal >= 40 ? "#c48a1c" : "#d6453b",
         texto: uptime.senal === null ? "" : Math.round(uptime.senal) + "%",
         pie: uptime.senal === null ? "Juntando datos" : uptime.senal >= 75 ? "Excelente" : uptime.senal >= 40 ? "Inestable" : "Con problemas",
         sub: uptime.pct !== null ? "Uptime 24hs · " + uptime.pct.toFixed(1) + "%" : "",
       }),
       Dial({
         titulo: "Latencia promedio", valor: latenciaProm, max: 2000,
-        color: latenciaProm !== null && latenciaProm > 1500 ? "#d1645a" : latenciaProm !== null && latenciaProm > 800 ? "#c9a55c" : "#7a9fc4",
+        color: latenciaProm !== null && latenciaProm > 1500 ? "#d6453b" : latenciaProm !== null && latenciaProm > 800 ? "#c48a1c" : "#3b82c4",
         texto: latenciaProm === null ? "" : Math.round(latenciaProm) + "ms", pie: "Escala 0–2000 ms",
         sub: "Vercel · Claude · Resend",
       }),
       Dial({
         titulo: "Aperturas hoy", valor: aperturas.hoy, max: Math.max(10, Math.ceil(aperturas.hoy / 10) * 10),
-        color: "#b8996a", texto: String(aperturas.hoy), pie: "Escala 0–" + Math.max(10, Math.ceil(aperturas.hoy / 10) * 10),
+        color: "#a07c3a", texto: String(aperturas.hoy), pie: "Escala 0–" + Math.max(10, Math.ceil(aperturas.hoy / 10) * 10),
         sub: aperturas.ultima ? "Última · " + hace(aperturas.ultima) : "Sin aperturas todavía",
       }),
       Dial({
         titulo: "Costo del mes", valor: totalCostos, max: Math.max(100, Math.ceil(totalCostos / 50) * 50),
-        color: "#c9a55c", texto: "$" + Math.round(totalCostos), pie: "Escala 0–" + Math.max(100, Math.ceil(totalCostos / 50) * 50) + " USD",
+        color: "#c48a1c", texto: "$" + Math.round(totalCostos), pie: "Escala 0–" + Math.max(100, Math.ceil(totalCostos / 50) * 50) + " USD",
         sub: "Supabase + Vercel + Claude",
       })
     ),
@@ -1280,13 +1281,13 @@ function Dashboard({ tabs }) {
           return h("div", {
             key: a.id,
             style: {
-              background: critica ? "rgba(209,100,90,.1)" : "rgba(201,165,92,.08)",
-              border: "1px solid " + (critica ? "rgba(209,100,90,.4)" : "rgba(201,165,92,.35)"),
+              background: critica ? "rgba(214,69,59,.1)" : "rgba(196,138,28,.08)",
+              border: "1px solid " + (critica ? "rgba(214,69,59,.4)" : "rgba(196,138,28,.35)"),
               borderRadius: 12, padding: "12px 14px",
             },
           },
             h("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
-              h("span", { style: { fontSize: 11, fontWeight: 700, color: critica ? "#d1645a" : "#c9a55c" } }, critica ? "🔴 CRÍTICA" : "🟡 ATENCIÓN"),
+              h("span", { style: { fontSize: 11, fontWeight: 700, color: critica ? "#d6453b" : "#c48a1c" } }, critica ? "🔴 CRÍTICA" : "🟡 ATENCIÓN"),
               h("span", { style: { fontSize: 13, fontWeight: 700, color: "var(--text)" } }, a.titulo)
             ),
             a.detalle && h("div", { style: { fontSize: 12, color: "var(--text-faint)", marginTop: 4 } }, a.detalle)
@@ -1352,25 +1353,25 @@ function Dashboard({ tabs }) {
     ),
     h("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10, fontSize: 12, color: "var(--text-faint)" } },
       "Hoy por vista:",
-      [["Contratista", "contratista", "#a98c5c"], ["Cliente", "cliente", "#6bb48a"], ["Constructora", "constructora", "#7a9fc4"], ["Propietario", "propietario", "#c4806f"]].map(([n, k, c]) =>
+      [["Contratista", "contratista", "#a07c3a"], ["Cliente", "cliente", "#2e9e5b"], ["Constructora", "constructora", "#3b82c4"], ["Propietario", "propietario", "#c4604a"]].map(([n, k, c]) =>
         h("span", { key: k, style: { border: "1px solid " + c, borderRadius: 999, padding: "2px 10px", color: c } }, n + " " + aperturas.hoyPorVista[k])
       )
     ),
     h("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 10, marginTop: 10 } },
       h("div", { className: "gauge", style: { padding: "16px" } },
         h("div", { className: "gauge-label", style: { marginBottom: 12 } }, "Uso por vista · aperturas"),
-        [["Contratista", "contratista", "#a98c5c"], ["Cliente", "cliente", "#6bb48a"], ["Constructora", "constructora", "#7a9fc4"], ["Propietario", "propietario", "#c4806f"]].map(([n, k, c]) => {
+        [["Contratista", "contratista", "#a07c3a"], ["Cliente", "cliente", "#2e9e5b"], ["Constructora", "constructora", "#3b82c4"], ["Propietario", "propietario", "#c4604a"]].map(([n, k, c]) => {
           const maxV = Math.max(1, aperturas.porVista.contratista, aperturas.porVista.cliente, aperturas.porVista.constructora, aperturas.porVista.propietario);
           const v = aperturas.porVista[k];
           return h("div", { key: k, style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 12 } },
             h("div", { style: { width: 92, fontSize: 11, letterSpacing: ".04em", color: c, textTransform: "uppercase" } }, n),
-            h("div", { style: { flex: 1, height: 12, borderRadius: 6, background: "#111113", border: "1px solid #2c2c2e", overflow: "hidden" } },
+            h("div", { style: { flex: 1, height: 12, borderRadius: 6, background: "#ececf0", border: "1px solid #e5e5ea", overflow: "hidden" } },
               h("div", { style: { width: (v / maxV * 100) + "%", height: "100%", background: c } })
             ),
             h("div", { style: { width: 34, textAlign: "right", fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace", fontSize: 17, fontWeight: 600, color: c } }, v)
           );
         }),
-        h("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--text-faint)", borderTop: "1px solid #2c2c2e", paddingTop: 8 } },
+        h("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--text-faint)", borderTop: "1px solid #e5e5ea", paddingTop: 8 } },
           h("span", null, "TOTAL (30 días)"),
           h("span", { style: { color: "var(--text)", fontWeight: 600 } }, aperturas.porVista.contratista + aperturas.porVista.cliente + aperturas.porVista.constructora + aperturas.porVista.propietario)
         )
@@ -1390,7 +1391,7 @@ function Dashboard({ tabs }) {
             h("div", { className: "cost-name" },
               c.nombre,
               " ",
-              h("span", { style: { fontSize: 9.5, fontWeight: 700, letterSpacing: .3, padding: "2px 6px", borderRadius: 5, marginLeft: 4, color: c.fuente === "real" ? "#6bb48a" : c.fuente === "manual" ? "#a98c5c" : "#7A8699", background: c.fuente === "real" ? "rgba(107,180,138,.12)" : c.fuente === "manual" ? "rgba(169,140,92,.15)" : "rgba(122,134,153,.12)" } }, c.fuente === "real" ? "REAL" : c.fuente === "manual" ? "MANUAL" : "GRATIS")
+              h("span", { style: { fontSize: 9.5, fontWeight: 700, letterSpacing: .3, padding: "2px 6px", borderRadius: 5, marginLeft: 4, color: c.fuente === "real" ? "#2e9e5b" : c.fuente === "manual" ? "#a07c3a" : "#6e6e73", background: c.fuente === "real" ? "rgba(46,158,91,.12)" : c.fuente === "manual" ? "rgba(160,124,58,.15)" : "rgba(110,110,115,.12)" } }, c.fuente === "real" ? "REAL" : c.fuente === "manual" ? "MANUAL" : "GRATIS")
             ),
             h("div", { className: "cost-tag" }, c.tag)
           ),
@@ -1401,18 +1402,18 @@ function Dashboard({ tabs }) {
         h("div", { className: "cost-total-label" }, "Total mensual"),
         h("div", { className: "cost-total-amount" }, "$" + totalCostos.toFixed(2) + " USD")
       ),
-      costoClaude.mes !== null && costoClaude.porApp.length > 0 && h("div", { style: { padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,.08)" } },
-        h("div", { style: { fontSize: 10.5, fontWeight: 700, color: "#7A8699", letterSpacing: .3, marginBottom: 8 } }, "CLAUDE API — DESGLOSE POR APP (MES EN CURSO)"),
+      costoClaude.mes !== null && costoClaude.porApp.length > 0 && h("div", { style: { padding: "12px 16px", borderTop: "1px solid rgba(0,0,0,.08)" } },
+        h("div", { style: { fontSize: 10.5, fontWeight: 700, color: "#6e6e73", letterSpacing: .3, marginBottom: 8 } }, "CLAUDE API — DESGLOSE POR APP (MES EN CURSO)"),
         costoClaude.porApp.map((p, i) =>
-          h("div", { key: i, style: { display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "#C7D0DB", padding: "3px 0" } },
+          h("div", { key: i, style: { display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "#3a3a3c", padding: "3px 0" } },
             h("span", null, p.app),
             h("span", null, "$" + p.monto.toFixed(2))
           )
         ),
-        costoClaude.hoy !== null && h("div", { style: { fontSize: 11, color: "#7A8699", marginTop: 8 } }, "Hoy: $" + costoClaude.hoy.toFixed(2))
+        costoClaude.hoy !== null && h("div", { style: { fontSize: 11, color: "#6e6e73", marginTop: 8 } }, "Hoy: $" + costoClaude.hoy.toFixed(2))
       ),
-      costoClaude.ultimos7.length > 0 && h("div", { style: { padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,.08)" } },
-        h("div", { style: { fontSize: 10.5, fontWeight: 700, color: "#7A8699", letterSpacing: .3, marginBottom: 6 } }, "CLAUDE API — ÚLTIMOS 7 DÍAS"),
+      costoClaude.ultimos7.length > 0 && h("div", { style: { padding: "12px 16px", borderTop: "1px solid rgba(0,0,0,.08)" } },
+        h("div", { style: { fontSize: 10.5, fontWeight: 700, color: "#6e6e73", letterSpacing: .3, marginBottom: 6 } }, "CLAUDE API — ÚLTIMOS 7 DÍAS"),
         BarrasCosto7Dias({ data: costoClaude.ultimos7, width: 280 })
       ),
       h("div", { className: "cost-note" },
@@ -1432,14 +1433,14 @@ function Dashboard({ tabs }) {
             return h("div", {
               key: inc.id,
               style: {
-                background: "var(--panel)", border: "1px solid " + (abierto ? "rgba(209,100,90,.35)" : "var(--border)"),
+                background: "var(--panel)", border: "1px solid " + (abierto ? "rgba(214,69,59,.35)" : "var(--border)"),
                 borderRadius: 14, padding: "14px 16px", opacity: abierto ? 1 : .55,
               },
             },
               h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 } },
                 h("div", { style: { flex: 1 } },
                   h("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
-                    h("span", { style: { fontSize: 11, fontWeight: 700, color: abierto ? "#d1645a" : "#6bb48a" } }, abierto ? "⚠ ABIERTO" : "✓ RESUELTO"),
+                    h("span", { style: { fontSize: 11, fontWeight: 700, color: abierto ? "#d6453b" : "#2e9e5b" } }, abierto ? "⚠ ABIERTO" : "✓ RESUELTO"),
                     h("span", { style: { fontSize: 11, color: "var(--text-faint)", textTransform: "uppercase" } }, inc.app)
                   ),
                   h("div", { style: { fontSize: 13, color: "var(--text)", marginTop: 4, lineHeight: 1.4 } }, (inc.mensaje || "").slice(0, 140)),
@@ -1451,7 +1452,7 @@ function Dashboard({ tabs }) {
                 ),
                 abierto && h("button", {
                   onClick: () => marcarResuelto(inc.id),
-                  style: { background: "rgba(107,180,138,.12)", color: "#6bb48a", border: "1px solid rgba(107,180,138,.4)", borderRadius: 8, padding: "6px 12px", fontSize: 11.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" },
+                  style: { background: "rgba(46,158,91,.12)", color: "#2e9e5b", border: "1px solid rgba(46,158,91,.4)", borderRadius: 8, padding: "6px 12px", fontSize: 11.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" },
                 }, "Marcar resuelto")
               )
             );
@@ -1708,8 +1709,8 @@ function DetalleCliente({ cliente, onVolver, onActualizado }) {
             h("span", {
               style: {
                 fontSize: 10.5, fontWeight: 700, padding: "4px 10px", borderRadius: 20, textTransform: "uppercase",
-                color: cliente.estado === "activo" ? "#6bb48a" : cliente.estado === "pausado" ? "#c9a55c" : "#7A8699",
-                background: cliente.estado === "activo" ? "rgba(107,180,138,.12)" : cliente.estado === "pausado" ? "rgba(201,165,92,.12)" : "rgba(122,134,153,.12)",
+                color: cliente.estado === "activo" ? "#2e9e5b" : cliente.estado === "pausado" ? "#c48a1c" : "#6e6e73",
+                background: cliente.estado === "activo" ? "rgba(46,158,91,.12)" : cliente.estado === "pausado" ? "rgba(196,138,28,.12)" : "rgba(110,110,115,.12)",
               },
             }, cliente.estado)
           ),
@@ -1720,7 +1721,7 @@ function DetalleCliente({ cliente, onVolver, onActualizado }) {
             }, "Editar"),
             h("button", {
               onClick: eliminarCliente,
-              style: { background: "rgba(209,100,90,.1)", border: "1px solid rgba(209,100,90,.35)", color: "#d1645a", borderRadius: 8, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" },
+              style: { background: "rgba(214,69,59,.1)", border: "1px solid rgba(214,69,59,.35)", color: "#d6453b", borderRadius: 8, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" },
             }, "Eliminar")
           )
         )
@@ -1737,7 +1738,7 @@ function DetalleCliente({ cliente, onVolver, onActualizado }) {
           h("div", { style: { display: "flex", gap: 8 } },
             h("button", {
               onClick: guardarEdicion, disabled: guardando,
-              style: { flex: 1, background: "var(--brass)", color: "#151109", border: "none", borderRadius: 8, padding: "10px", fontWeight: 700, fontSize: 13, cursor: "pointer", opacity: guardando ? .6 : 1 },
+              style: { flex: 1, background: "var(--brass)", color: "#ffffff", border: "none", borderRadius: 8, padding: "10px", fontWeight: 700, fontSize: 13, cursor: "pointer", opacity: guardando ? .6 : 1 },
             }, guardando ? "Guardando…" : "Guardar cambios"),
             h("button", {
               onClick: () => setEditando(false),
@@ -1764,8 +1765,8 @@ function DetalleCliente({ cliente, onVolver, onActualizado }) {
               h("div", { className: "section-label" }, "Incidentes de " + cliente.nombre),
               h("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
                 datos.incidentesAbiertos.map(inc =>
-                  h("div", { key: inc.id, style: { background: "var(--panel)", border: "1px solid rgba(209,100,90,.35)", borderRadius: 12, padding: "12px 14px" } },
-                    h("div", { style: { fontSize: 11, fontWeight: 700, color: "#d1645a" } }, inc.app),
+                  h("div", { key: inc.id, style: { background: "var(--panel)", border: "1px solid rgba(214,69,59,.35)", borderRadius: 12, padding: "12px 14px" } },
+                    h("div", { style: { fontSize: 11, fontWeight: 700, color: "#d6453b" } }, inc.app),
                     h("div", { style: { fontSize: 12.5, color: "var(--text)", marginTop: 3 } }, (inc.mensaje || "").slice(0, 140)),
                     h("div", { style: { fontSize: 10.5, color: "var(--text-faint)", marginTop: 3 } }, inc.ocurrencias + " ocurrencias")
                   )
@@ -1802,7 +1803,7 @@ function DetalleCliente({ cliente, onVolver, onActualizado }) {
               h("button", {
                 onClick: () => generarPDFInforme(cliente, opcionesDeMes(6).find(o => o.valor === mes).etiqueta, informe),
                 style: {
-                  marginTop: 10, width: "100%", background: "var(--brass)", color: "#151109", border: "none",
+                  marginTop: 10, width: "100%", background: "var(--brass)", color: "#ffffff", border: "none",
                   borderRadius: 8, padding: "11px", fontWeight: 700, fontSize: 13, cursor: "pointer",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                 },
@@ -1883,7 +1884,7 @@ function PantallaClientes() {
       h("textarea", { placeholder: "Notas (plan, fecha de alta, lo que sea útil)", value: form.notas, onChange: e => setForm({ ...form, notas: e.target.value }), rows: 2, style: { ...inputStyle, resize: "vertical" } }),
       h("button", {
         onClick: guardarCliente, disabled: guardando || !form.nombre.trim(),
-        style: { background: "var(--brass)", color: "#151109", border: "none", borderRadius: 8, padding: "10px", fontWeight: 700, fontSize: 13, cursor: "pointer", opacity: guardando ? .6 : 1 },
+        style: { background: "var(--brass)", color: "#ffffff", border: "none", borderRadius: 8, padding: "10px", fontWeight: 700, fontSize: 13, cursor: "pointer", opacity: guardando ? .6 : 1 },
       }, guardando ? "Guardando…" : "Guardar cliente")
     ),
     clientes.length > 0 && h("input", {
@@ -1929,7 +1930,7 @@ function App() {
   if (!unlocked) return h(Gate, { onUnlock: () => setUnlocked(true) });
   const estiloTab = (activa) => ({
     background: activa ? "var(--brass)" : "var(--panel)",
-    color: activa ? "#151109" : "var(--text-dim)",
+    color: activa ? "#ffffff" : "var(--text-dim)",
     border: "1px solid " + (activa ? "var(--brass)" : "var(--border)"),
     borderRadius: 20, padding: "7px 16px", fontSize: 12.5, fontWeight: 700, cursor: "pointer",
   });
